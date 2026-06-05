@@ -1,0 +1,157 @@
+#!/bin/bash
+set -euo pipefail
+
+exec > >(tee /var/log/deployment-notes-app-user-data.log | logger -t deployment-notes-app-user-data -s 2>/dev/console) 2>&1
+
+AWS_REGION="${aws_region}"
+AWS_ACCOUNT_ID="${aws_account_id}"
+ECR_REPOSITORY="${ecr_repository}"
+ENVIRONMENT="${environment}"
+IMAGE_TAG_SSM_PARAM="${image_tag_parameter_name}"
+CONTAINER_NAME="${container_name}"
+
+CLOUDWATCH_LOG_GROUP="${cloudwatch_log_group}"
+CLOUDWATCH_BOOTSTRAP_LOG_GROUP="${cloudwatch_bootstrap_log_group}"
+CLOUDWATCH_LOG_RETENTION_DAYS="${cloudwatch_log_retention_days}"
+
+CW_AGENT_SSM_CONFIG_PARAM="${cloudwatch_agent_parameter}"
+
+DEPLOYMENT_NOTES_LOG_LEVEL="${backend_log_level}"
+SSM_DATABASE_URL_PARAM="${database_url_parameter_name}"
+
+echo "Starting deployment-notes backend bootstrap"
+echo "Environment: $${ENVIRONMENT}"
+echo "Image tag SSM parameter: $${IMAGE_TAG_SSM_PARAM}"
+
+touch /var/log/deployment-notes-app-user-data.log
+chmod 644 /var/log/deployment-notes-app-user-data.log
+
+IMDS_TOKEN="$(curl -fsS -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")"
+INSTANCE_ID="$(curl -fsS -H "X-aws-ec2-metadata-token: $${IMDS_TOKEN}" "http://169.254.169.254/latest/meta-data/instance-id")"
+
+LOG_STREAM="$${CONTAINER_NAME}/$${INSTANCE_ID}"
+
+echo "Instance ID: $${INSTANCE_ID}"
+echo "Container log stream: $${LOG_STREAM}"
+
+IMAGE_TAG="$(aws ssm get-parameter \
+  --region "$${AWS_REGION}" \
+  --name "$${IMAGE_TAG_SSM_PARAM}" \
+  --query "Parameter.Value" \
+  --output text)"
+
+if [ -z "$${IMAGE_TAG}" ] || [ "$${IMAGE_TAG}" = "None" ]; then
+  echo "Failed to read backend image tag from SSM"
+  exit 1
+fi
+
+ECR_REGISTRY="$${AWS_ACCOUNT_ID}.dkr.ecr.$${AWS_REGION}.amazonaws.com"
+IMAGE_URI="$${ECR_REGISTRY}/$${ECR_REPOSITORY}:$${IMAGE_TAG}"
+
+echo "Image URI: $${IMAGE_URI}"
+
+create_log_group_if_missing() {
+  local log_group_name="$1"
+
+  aws logs create-log-group \
+    --region "$${AWS_REGION}" \
+    --log-group-name "$${log_group_name}" 2>/tmp/create-log-group-error.log || {
+      if grep -q "ResourceAlreadyExistsException" /tmp/create-log-group-error.log; then
+        echo "CloudWatch log group already exists: $${log_group_name}"
+      else
+        echo "Failed to create CloudWatch log group: $${log_group_name}"
+        cat /tmp/create-log-group-error.log
+        exit 1
+      fi
+    }
+
+  aws logs put-retention-policy \
+    --region "$${AWS_REGION}" \
+    --log-group-name "$${log_group_name}" \
+    --retention-in-days "$${CLOUDWATCH_LOG_RETENTION_DAYS}"
+}
+
+echo "Ensuring CloudWatch log groups exist"
+create_log_group_if_missing "$${CLOUDWATCH_LOG_GROUP}"
+create_log_group_if_missing "$${CLOUDWATCH_BOOTSTRAP_LOG_GROUP}"
+
+echo "Configuring CloudWatch Agent from SSM Parameter Store: $${CW_AGENT_SSM_CONFIG_PARAM}"
+
+if [ ! -x /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl ]; then
+  echo "CloudWatch Agent is not installed or amazon-cloudwatch-agent-ctl is missing"
+  exit 1
+fi
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -c "ssm:$${CW_AGENT_SSM_CONFIG_PARAM}" \
+  -s
+
+systemctl enable amazon-cloudwatch-agent
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status || true
+
+echo "Starting Docker"
+systemctl enable --now docker
+
+echo "Logging in to ECR"
+aws ecr get-login-password --region "$${AWS_REGION}" \
+  | docker login --username AWS --password-stdin "$${ECR_REGISTRY}"
+
+echo "Pulling Docker image: $${IMAGE_URI}"
+docker pull "$${IMAGE_URI}"
+
+echo "Removing old container if it exists"
+docker rm -f "$${CONTAINER_NAME}" 2>/dev/null || true
+
+echo "Starting backend container"
+docker run -d \
+  --name "$${CONTAINER_NAME}" \
+  --restart unless-stopped \
+  -p ${app_port}:${app_port} \
+  --log-driver awslogs \
+  --log-opt awslogs-region="$${AWS_REGION}" \
+  --log-opt awslogs-group="$${CLOUDWATCH_LOG_GROUP}" \
+  --log-opt awslogs-stream="$${LOG_STREAM}" \
+  --log-opt mode=non-blocking \
+  --log-opt max-buffer-size=4m \
+  -e DEPLOYMENT_NOTES_ENV="$${ENVIRONMENT}" \
+  -e DEPLOYMENT_NOTES_SERVE_FRONTEND=false \
+  -e DEPLOYMENT_NOTES_DATABASE_URL_SSM_PARAM="$${SSM_DATABASE_URL_PARAM}" \
+  -e DEPLOYMENT_NOTES_LOG_LEVEL="$${DEPLOYMENT_NOTES_LOG_LEVEL}" \
+  -e AWS_REGION="$${AWS_REGION}" \
+  -e AWS_DEFAULT_REGION="$${AWS_REGION}" \
+  -e FLASK_APP=wsgi.py \
+  -e PORT=${app_port} \
+  -e GUNICORN_WORKERS=${gunicorn_workers} \
+  -e GUNICORN_THREADS=${gunicorn_threads} \
+  "$${IMAGE_URI}"
+
+sleep 5
+
+APP_HEALTHY=false
+for i in $(seq 1 ${health_check_attempts}); do
+  if curl -fsS "http://localhost:${app_port}/health" >/dev/null; then
+    echo "Application health check passed"
+    APP_HEALTHY=true
+    break
+  fi
+
+  echo "Waiting for application to become healthy... attempt $${i}/${health_check_attempts}"
+  sleep ${health_check_interval_seconds}
+done
+
+if [ "$${APP_HEALTHY}" != "true" ]; then
+  echo "Application health check failed"
+  docker logs "$${CONTAINER_NAME}" || true
+  /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status || true
+  tail -n 100 /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log || true
+  exit 1
+fi
+
+echo "Container $${CONTAINER_NAME} is running successfully"
+docker ps --filter "name=$${CONTAINER_NAME}"
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status || true
+docker image prune -af --filter "until=24h" || true
+
+echo "Backend bootstrap completed successfully"

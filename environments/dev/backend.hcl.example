@@ -1,0 +1,5 @@
+bucket         = "project-name-dev-terraform-state"
+key            = "aws-3tier-architecture/dev/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "project-name-dev-terraform-locks"
+encrypt        = true
