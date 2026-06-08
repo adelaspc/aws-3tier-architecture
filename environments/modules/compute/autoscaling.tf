@@ -17,6 +17,12 @@ resource "aws_launch_template" "web" {
     arn = aws_iam_instance_profile.ec2["web"].arn
   }
 
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+
   vpc_security_group_ids = [var.web_security_group_id]
 
   user_data = base64encode(templatefile("${path.module}/user_data/web.sh.tftpl", {
@@ -47,6 +53,7 @@ resource "aws_launch_template" "web" {
 }
 
 resource "aws_launch_template" "app" {
+  #checkov:skip=CKV_AWS_341: Hop limit 2 is required so the backend container can use the EC2 instance role
   name_prefix   = "${local.name_prefix}-app-"
   image_id      = data.aws_ami.custom.id
   instance_type = var.instance_type

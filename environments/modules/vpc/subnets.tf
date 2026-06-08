@@ -1,5 +1,6 @@
 
 resource "aws_subnet" "public" {
+  #checkov:skip=CKV_AWS_130: Public subnets host the internet-facing ALB and NAT gateways by design
   for_each = local.public_subnet_map
 
   vpc_id            = aws_vpc.main.id

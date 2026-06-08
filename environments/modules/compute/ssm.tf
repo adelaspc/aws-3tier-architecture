@@ -1,4 +1,5 @@
 resource "aws_ssm_parameter" "image_tag" {
+  #checkov:skip=CKV2_AWS_34: Container image tags are deployment metadata and contain no secrets
   for_each = {
     app = var.initial_backend_image_tag
     web = var.initial_frontend_image_tag

@@ -1,4 +1,5 @@
 resource "aws_security_group" "public_alb" {
+  #checkov:skip=CKV2_AWS_5: Security group attachment occurs in the load_balancers module
   name        = "${local.name_prefix}-sg-public-alb"
   description = "Security group for public ALB"
   vpc_id      = var.vpc_id
@@ -9,6 +10,7 @@ resource "aws_security_group" "public_alb" {
 }
 
 resource "aws_security_group" "internal_alb" {
+  #checkov:skip=CKV2_AWS_5: Security group attachment occurs in the load_balancers module
   name        = "${local.name_prefix}-sg-internal-alb"
   description = "Security group for internal alb"
   vpc_id      = var.vpc_id
@@ -20,6 +22,7 @@ resource "aws_security_group" "internal_alb" {
 }
 
 resource "aws_security_group" "web_ec2" {
+  #checkov:skip=CKV2_AWS_5: Security group attachment occurs in the compute module
   name        = "${local.name_prefix}-sg-web"
   description = "Security group for web EC2 instances "
   vpc_id      = var.vpc_id
@@ -30,6 +33,7 @@ resource "aws_security_group" "web_ec2" {
 }
 
 resource "aws_security_group" "app_ec2" {
+  #checkov:skip=CKV2_AWS_5: Security group attachment occurs in the compute module
   name        = "${local.name_prefix}-sg-app"
   description = "Security group for app EC2 instances"
   vpc_id      = var.vpc_id
@@ -40,6 +44,7 @@ resource "aws_security_group" "app_ec2" {
 }
 
 resource "aws_security_group" "db" {
+  #checkov:skip=CKV2_AWS_5: Security group attachment occurs in the rds module
   name        = "${local.name_prefix}-sg-db"
   description = "Security group for database instances"
   vpc_id      = var.vpc_id
@@ -50,6 +55,7 @@ resource "aws_security_group" "db" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "public_alb_http" {
+  #checkov:skip=CKV_AWS_260: Port 80 is exposed only to redirect public HTTP requests to HTTPS
   security_group_id = aws_security_group.public_alb.id
   description       = "Allow HTTP from the internet"
   from_port         = 80
@@ -77,6 +83,7 @@ resource "aws_vpc_security_group_egress_rule" "public_alb_to_web_http" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "web_from_public_alb" {
+  #checkov:skip=CKV_AWS_260: Source is a referenced security group, not an unrestricted IPv4 CIDR
   security_group_id = aws_security_group.web_ec2.id
 
   description = "Allow traffic from public ALB"
@@ -112,6 +119,7 @@ resource "aws_vpc_security_group_egress_rule" "web_to_internal_alb" {
 
 
 resource "aws_vpc_security_group_ingress_rule" "internal_alb_from_web" {
+  #checkov:skip=CKV_AWS_260: Source is a referenced security group, not an unrestricted IPv4 CIDR
   security_group_id            = aws_security_group.internal_alb.id
   description                  = "Allow HTTP from web EC2 instances"
   from_port                    = var.web_port
