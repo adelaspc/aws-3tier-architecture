@@ -8,6 +8,11 @@ locals {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
+  #checkov:skip=CKV_AWS_18: Short-lived portfolio environment; dedicated access logging bucket is intentionally omitted
+  #checkov:skip=CKV_AWS_144: Single-region demo state; cross-region replication cost is intentionally omitted
+  #checkov:skip=CKV_AWS_145: AWS-managed AES256 encryption is sufficient for this demo state
+  #checkov:skip=CKV2_AWS_61: State history is protected by versioning; lifecycle expiration is intentionally manual
+  #checkov:skip=CKV2_AWS_62: Terraform state changes do not require event notifications in this demo
   bucket = var.state_bucket_name
 
   tags = merge(local.common_tags, {
@@ -51,6 +56,8 @@ resource "aws_s3_bucket_ownership_controls" "terraform_state" {
 }
 
 resource "aws_dynamodb_table" "terraform_locks" {
+  #checkov:skip=CKV_AWS_28: Ephemeral lock records do not require point-in-time recovery
+  #checkov:skip=CKV_AWS_119: AWS-owned encryption is sufficient for non-sensitive lock records
   name         = var.lock_table_name
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
