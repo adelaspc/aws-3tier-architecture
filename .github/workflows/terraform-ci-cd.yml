@@ -75,6 +75,10 @@ jobs:
       - name: Check Terraform formatting
         run: terraform fmt -check -recursive environments
 
+      - name: Initialize GitHub Actions IAM test module
+        working-directory: environments/modules/github-actions-iam
+        run: terraform init -backend=false -input=false
+
       - name: Test GitHub Actions IAM authorization boundaries
         working-directory: environments/modules/github-actions-iam
         run: terraform test -no-color
