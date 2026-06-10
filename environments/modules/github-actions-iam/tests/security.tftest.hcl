@@ -41,14 +41,14 @@ run "github_actions_security_model" {
   command = plan
 
   variables {
-    project            = "deployment-notes"
-    environment        = "dev"
-    github_repository  = "adelaspc/aws-3tier-architecture"
-    github_environment = "terraform-dev"
+    project                = "deployment-notes"
+    environment            = "dev"
+    github_repository      = "adelaspc/aws-3tier-architecture"
+    github_environment     = "terraform-dev"
     github_app_environment = "app-dev"
     ecr_repository_name    = "deployments-notes-app"
-    state_bucket_name  = "deployment-notes-dev-terraform-state"
-    dev_state_key      = "aws-3tier-architecture/dev/terraform.tfstate"
+    state_bucket_name      = "deployment-notes-dev-terraform-state"
+    dev_state_key          = "aws-3tier-architecture/dev/terraform.tfstate"
   }
 
   assert {
