@@ -83,6 +83,7 @@ data "aws_iam_policy_document" "plan_permissions" {
       "ssm:GetParameter",
       "ssm:GetParameters",
       "ssm:GetParametersByPath",
+      "ssm:ListTagsForResource",
     ]
     resources = [
       "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.deployment_app_ssm_prefix}/*",
