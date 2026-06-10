@@ -10,11 +10,11 @@ Terraform resources; any other finding fails the workflow.
 ## Repository variables
 
 - `AWS_REGION`: AWS region used by the dev stack, for example `eu-central-1`.
-- `AWS_TERRAFORM_ROLE_ARN`: IAM role assumed by GitHub Actions through OIDC.
+- `AWS_TERRAFORM_PLAN_ROLE_ARN`: read-only infrastructure role used by plans.
+- `AWS_TERRAFORM_APPLY_ROLE_ARN`: application lifecycle role used by manual applies.
 - `TF_STATE_BUCKET`: existing remote-state S3 bucket.
 - `TF_STATE_KEY`: state object key, for example
   `aws-3tier-architecture/dev/terraform.tfstate`.
-- `TF_STATE_LOCK_TABLE`: existing DynamoDB lock table.
 
 ## Repository secrets
 
@@ -50,7 +50,16 @@ Example `TF_VARS_JSON` shape:
 ## GitHub environment and AWS OIDC
 
 Create the `terraform-dev` GitHub environment and add a required reviewer to
-gate applies. The IAM role trust policy must allow the repository's OIDC
-subjects used by pull-request plans and by the `terraform-dev` environment.
-Restrict the role to this repository and grant only the AWS permissions needed
-by the Terraform stack and remote-state backend.
+gate applies. Restrict its deployment branches to `main`. Apply runs must be
+manually dispatched from `main`; the workflow and environment both enforce
+that restriction.
+
+Create the OIDC provider and both roles by applying
+`environments/github-actions-bootstrap` with a trusted local AWS identity. The
+plan role accepts internal pull requests and manual plans from repository
+branches. Fork pull requests run quality checks but skip the AWS plan job. The
+apply role accepts only the `terraform-dev` environment subject.
+
+The bootstrap stack uses a state key separate from the dev application state.
+DynamoDB locking is retained for now; migration to S3 native lockfiles is a
+future improvement.

@@ -1,0 +1,44 @@
+{
+  "project": "project-name",
+  "region": "us-east-1",
+  "environment": "dev",
+  "vpc_cidr": "10.0.0.0/16",
+  "azs": [
+    "us-east-1a",
+    "us-east-1b"
+  ],
+  "public_subnets": [
+    "10.0.0.0/27",
+    "10.0.0.32/27"
+  ],
+  "web_subnets": [
+    "10.0.1.0/27",
+    "10.0.1.32/27"
+  ],
+  "app_subnets": [
+    "10.0.2.0/27",
+    "10.0.2.32/27"
+  ],
+  "db_subnets": [
+    "10.0.3.0/27",
+    "10.0.3.32/27"
+  ],
+  "public_zone_name": "example.com",
+  "public_record_name": "www",
+  "cloudflare_zone_id": "zone-id",
+  "cloudflare_proxied": false,
+  "custom_ami_id": "ami-id",
+  "ecr_repository_name": "deployments-notes-app",
+  "initial_backend_image_tag": "1.0.0",
+  "initial_frontend_image_tag": "1.0.0",
+  "deployment_app_ssm_prefix": "/dev/deployment-app",
+  "cloudwatch_log_group_prefix": "/dev/deployment-notes",
+  "backend_container_name": "deployment-notes-backend",
+  "frontend_container_name": "deployment-notes-frontend",
+  "backend_log_level": "INFO",
+  "backend_gunicorn_workers": 2,
+  "backend_gunicorn_threads": 4,
+  "container_health_check_attempts": 10,
+  "container_health_check_interval_seconds": 3,
+  "acm_certificate_arn": "arn:aws:acm:<aws-region>:<account-id>:certificate/12345..."
+}

@@ -54,20 +54,3 @@ resource "aws_s3_bucket_ownership_controls" "terraform_state" {
     object_ownership = "BucketOwnerEnforced"
   }
 }
-
-resource "aws_dynamodb_table" "terraform_locks" {
-  #checkov:skip=CKV_AWS_28: Ephemeral lock records do not require point-in-time recovery
-  #checkov:skip=CKV_AWS_119: AWS-owned encryption is sufficient for non-sensitive lock records
-  name         = var.lock_table_name
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  tags = merge(local.common_tags, {
-    Name = var.lock_table_name
-  })
-}
