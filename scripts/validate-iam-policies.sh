@@ -35,7 +35,8 @@ plan_json=$(terraform -chdir="$plan_dir" show -json "$plan_name")
 
 mapfile -t identity_policies < <(
   jq -r '
-    .. | objects |
+    def modules: ., (.child_modules[]? | modules);
+    .planned_values.root_module | modules | .resources[]? |
     select(.type? == "aws_iam_policy") |
     .values.policy? |
     select(type == "string") |
@@ -43,8 +44,8 @@ mapfile -t identity_policies < <(
   ' <<< "$plan_json"
 )
 
-if [[ ${#identity_policies[@]} -ne 2 ]]; then
-  echo "Expected two IAM permission policies in the bootstrap plan; found ${#identity_policies[@]}." >&2
+if [[ ${#identity_policies[@]} -ne 3 ]]; then
+  echo "Expected three IAM permission policies in the bootstrap plan; found ${#identity_policies[@]}." >&2
   exit 1
 fi
 
@@ -54,7 +55,8 @@ done
 
 mapfile -t trust_policies < <(
   jq -r '
-    .. | objects |
+    def modules: ., (.child_modules[]? | modules);
+    .planned_values.root_module | modules | .resources[]? |
     select(.type? == "aws_iam_role") |
     .values.assume_role_policy? |
     select(type == "string") |
@@ -62,8 +64,8 @@ mapfile -t trust_policies < <(
   ' <<< "$plan_json"
 )
 
-if [[ ${#trust_policies[@]} -ne 2 ]]; then
-  echo "Expected two IAM trust policies in the bootstrap plan; found ${#trust_policies[@]}." >&2
+if [[ ${#trust_policies[@]} -ne 3 ]]; then
+  echo "Expected three IAM trust policies in the bootstrap plan; found ${#trust_policies[@]}." >&2
   exit 1
 fi
 

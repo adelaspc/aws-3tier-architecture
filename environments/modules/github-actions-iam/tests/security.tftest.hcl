@@ -41,12 +41,14 @@ run "github_actions_security_model" {
   command = plan
 
   variables {
-    project            = "deployment-notes"
-    environment        = "dev"
-    github_repository  = "adelaspc/aws-3tier-architecture"
-    github_environment = "terraform-dev"
-    state_bucket_name  = "deployment-notes-dev-terraform-state"
-    dev_state_key      = "aws-3tier-architecture/dev/terraform.tfstate"
+    project                = "deployment-notes"
+    environment            = "dev"
+    github_repository      = "adelaspc/aws-3tier-architecture"
+    github_environment     = "terraform-dev"
+    github_app_environment = "app-dev"
+    ecr_repository_name    = "deployments-notes-app"
+    state_bucket_name      = "deployment-notes-dev-terraform-state"
+    dev_state_key          = "aws-3tier-architecture/dev/terraform.tfstate"
   }
 
   assert {
@@ -67,6 +69,16 @@ run "github_actions_security_model" {
   assert {
     condition     = !strcontains(data.aws_iam_policy_document.apply_trust.json, "pull_request") && !strcontains(data.aws_iam_policy_document.apply_trust.json, "refs/heads")
     error_message = "Apply trust must not accept pull requests or branch subjects."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.app_deploy_trust.json, "repo:adelaspc/aws-3tier-architecture:environment:app-dev")
+    error_message = "App deployment trust must use the protected app-dev environment subject."
+  }
+
+  assert {
+    condition     = !strcontains(data.aws_iam_policy_document.app_deploy_trust.json, "pull_request") && !strcontains(data.aws_iam_policy_document.app_deploy_trust.json, "refs/heads")
+    error_message = "App deployment trust must not accept pull requests or branch subjects."
   }
 
   assert {
@@ -100,6 +112,31 @@ run "github_actions_security_model" {
   }
 
   assert {
+    condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "repository/deployments-notes-app") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ecr:PutImage")
+    error_message = "App deployment must push images only to the configured ECR repository."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "autoScalingGroupName/deployment-notes-dev-app-asg") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "autoScalingGroupName/deployment-notes-dev-web-asg")
+    error_message = "App deployment refresh permissions must be scoped to the app and web ASGs."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "document/AWS-RunShellScript") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ssm:SendCommand")
+    error_message = "App deployment must use SSM Run Command for database migrations."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "parameter/dev/deployment-app/images/*") && !strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ssm:GetParameterHistory")
+    error_message = "App deployment parameter writes must be limited to image tags."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "DenyAssumingOtherRoles")
+    error_message = "App deployment permissions must explicitly deny sts:AssumeRole."
+  }
+
+  assert {
     condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:CreateGrant") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:GrantIsForAWSResource") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "rds.eu-central-1.amazonaws.com")
     error_message = "KMS grants must be restricted to AWS resources used through RDS."
   }
@@ -107,6 +144,11 @@ run "github_actions_security_model" {
   assert {
     condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:ViaService") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "secretsmanager.eu-central-1.amazonaws.com")
     error_message = "KMS key usage must be restricted to RDS and Secrets Manager service calls."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "secretsmanager:CreateSecret") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "secret:rds!db-*") && !strcontains(data.aws_iam_policy_document.apply_permissions.json, "secretsmanager:GetSecretValue")
+    error_message = "Apply permissions must manage only RDS master-user secrets without reading their values."
   }
 
   assert {
@@ -136,7 +178,7 @@ run "github_actions_security_model" {
   }
 
   assert {
-    condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "ProtectCIRoles") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "ProtectCIPolicies") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "ProtectGitHubOIDCProvider")
-    error_message = "Apply permissions must explicitly protect CI roles, policies, and the OIDC provider."
+    condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "ProtectCIRoles") && strcontains(data.aws_iam_policy_document.apply_permissions.json, local.app_deploy_role_arn) && strcontains(data.aws_iam_policy_document.apply_permissions.json, "ProtectCIPolicies") && strcontains(data.aws_iam_policy_document.apply_permissions.json, local.app_deploy_policy_arn) && strcontains(data.aws_iam_policy_document.apply_permissions.json, "ProtectGitHubOIDCProvider")
+    error_message = "Apply permissions must explicitly protect all CI roles, policies, and the OIDC provider."
   }
 }
