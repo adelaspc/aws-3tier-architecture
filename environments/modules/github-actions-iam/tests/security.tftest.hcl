@@ -90,6 +90,16 @@ run "github_actions_security_model" {
   }
 
   assert {
+    condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:CreateGrant") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:GrantIsForAWSResource") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "rds.eu-central-1.amazonaws.com")
+    error_message = "KMS grants must be restricted to AWS resources used through RDS."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:ViaService") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "secretsmanager.eu-central-1.amazonaws.com")
+    error_message = "KMS key usage must be restricted to RDS and Secrets Manager service calls."
+  }
+
+  assert {
     condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "role/deployment-notes-dev-web-*") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "role/deployment-notes-dev-app-*")
     error_message = "Application IAM permissions must be scoped to web/app role prefixes."
   }

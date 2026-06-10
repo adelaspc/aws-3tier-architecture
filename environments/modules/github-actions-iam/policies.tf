@@ -168,6 +168,54 @@ data "aws_iam_policy_document" "apply_permissions" {
   }
 
   statement {
+    #checkov:skip=CKV_AWS_111: KMS key IDs are AWS-managed and discovered at runtime; service conditions restrict use to RDS and Secrets Manager
+    sid    = "UseApplicationServiceKMSKeys"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey",
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:kms:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:key/*",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values = [
+        "rds.${data.aws_region.current.region}.amazonaws.com",
+        "secretsmanager.${data.aws_region.current.region}.amazonaws.com",
+      ]
+    }
+  }
+
+  statement {
+    #checkov:skip=CKV_AWS_111: KMS key IDs are AWS-managed and discovered at runtime; grants are limited to AWS resources through RDS and Secrets Manager
+    sid     = "CreateApplicationServiceKMSGrants"
+    effect  = "Allow"
+    actions = ["kms:CreateGrant"]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:kms:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:key/*",
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values = [
+        "rds.${data.aws_region.current.region}.amazonaws.com",
+        "secretsmanager.${data.aws_region.current.region}.amazonaws.com",
+      ]
+    }
+  }
+
+  statement {
     sid    = "ReadIAMMetadata"
     effect = "Allow"
     actions = [
