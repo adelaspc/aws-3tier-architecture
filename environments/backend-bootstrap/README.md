@@ -1,6 +1,7 @@
 # Terraform Backend Bootstrap
 
-Creates the S3 bucket and DynamoDB lock table used by the `dev` Terraform backend.
+Creates the S3 bucket used by the `dev` Terraform backend. State locking uses
+Terraform's native S3 lockfile support.
 
 Run this stack once before initializing `environments/dev` with the remote backend:
 
@@ -17,4 +18,4 @@ cd ../dev
 terraform init -backend-config=backend.hcl
 ```
 
-Keep this bootstrap stack separate from the application stack so `terraform destroy` in `environments/dev` does not delete the remote state bucket or lock table.
+Keep this bootstrap stack separate from the application stack so `terraform destroy` in `environments/dev` does not delete the remote state bucket.

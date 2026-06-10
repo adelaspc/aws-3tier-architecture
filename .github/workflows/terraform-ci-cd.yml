@@ -1,0 +1,408 @@
+name: Terraform CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "environments/**"
+      - ".github/workflows/terraform-ci-cd.yml"
+      - ".terraform-version"
+      - ".tflint.hcl"
+  push:
+    branches:
+      - main
+    paths:
+      - "environments/**"
+      - ".github/workflows/terraform-ci-cd.yml"
+      - ".terraform-version"
+      - ".tflint.hcl"
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Operation to run against the dev environment
+        required: true
+        default: plan
+        type: choice
+        options:
+          - plan
+          - apply
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-dev-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
+  TF_WORKING_DIR: environments/dev
+  TFLINT_VERSION: v0.60.0
+
+jobs:
+  quality:
+    name: Format, test, and scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Read Terraform version
+        id: terraform-version
+        run: echo "version=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
+          terraform_wrapper: false
+
+      - name: Create Terraform plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-providers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environments/**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-providers-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive environments
+
+      - name: Initialize GitHub Actions IAM test module
+        working-directory: environments/modules/github-actions-iam
+        run: terraform init -backend=false -input=false
+
+      - name: Test GitHub Actions IAM authorization boundaries
+        working-directory: environments/modules/github-actions-iam
+        run: terraform test -no-color
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: ${{ env.TFLINT_VERSION }}
+
+      - name: Initialize TFLint plugins
+        run: tflint --init --config "$GITHUB_WORKSPACE/.tflint.hcl"
+
+      - name: Run TFLint
+        working-directory: environments
+        run: tflint --recursive --format compact --config "$GITHUB_WORKSPACE/.tflint.hcl"
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: environments
+          framework: terraform
+          quiet: true
+          compact: true
+          output_format: cli
+          soft_fail: false
+
+  validate:
+    name: Validate ${{ matrix.configuration.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration:
+          - name: backend bootstrap
+            working-directory: environments/backend-bootstrap
+          - name: dev
+            working-directory: environments/dev
+          - name: GitHub Actions IAM bootstrap
+            working-directory: environments/github-actions-bootstrap
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Read Terraform version
+        id: terraform-version
+        run: echo "version=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
+          terraform_wrapper: false
+
+      - name: Create Terraform plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-providers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environments/**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-providers-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Initialize Terraform
+        working-directory: ${{ matrix.configuration.working-directory }}
+        run: terraform init -backend=false -input=false
+
+      - name: Validate Terraform
+        working-directory: ${{ matrix.configuration.working-directory }}
+        run: terraform validate -no-color
+
+  plan:
+    name: Plan dev
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && inputs.operation == 'plan')
+    needs:
+      - quality
+      - validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_TERRAFORM_PLAN_ROLE_ARN: ${{ vars.AWS_TERRAFORM_PLAN_ROLE_ARN }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+      TF_VARS_JSON: ${{ secrets.TF_VARS_JSON }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Read Terraform version
+        id: terraform-version
+        run: echo "version=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate CI configuration
+        run: |
+          : "${AWS_REGION:?Repository variable AWS_REGION is required}"
+          : "${AWS_TERRAFORM_PLAN_ROLE_ARN:?Repository variable AWS_TERRAFORM_PLAN_ROLE_ARN is required}"
+          : "${TF_STATE_BUCKET:?Repository variable TF_STATE_BUCKET is required}"
+          : "${TF_STATE_KEY:?Repository variable TF_STATE_KEY is required}"
+          : "${TF_VARS_JSON:?Repository secret TF_VARS_JSON is required}"
+          : "${CLOUDFLARE_API_TOKEN:?Repository secret CLOUDFLARE_API_TOKEN is required}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.2
+        with:
+          role-to-assume: ${{ env.AWS_TERRAFORM_PLAN_ROLE_ARN }}
+          role-session-name: terraform-plan-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
+          terraform_wrapper: false
+
+      - name: Create Terraform plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-providers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environments/**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-providers-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Validate IAM policies with AWS Access Analyzer
+        run: |
+          validation_dir="environments/.github-actions-bootstrap-validation"
+          mkdir -p "$validation_dir"
+          find environments/github-actions-bootstrap -maxdepth 1 -type f \
+            \( -name '*.tf' -o -name '.terraform.lock.hcl' \) \
+            ! -name 'backend.tf' \
+            -exec cp {} "$validation_dir"/ \;
+
+          terraform -chdir="$validation_dir" init -backend=false -input=false
+          terraform -chdir="$validation_dir" plan \
+            -refresh=false \
+            -lock=false \
+            -input=false \
+            -out=iam-validation.tfplan \
+            -var="project=$(jq -r '.project' <<< "$TF_VARS_JSON")" \
+            -var="environment=$(jq -r '.environment' <<< "$TF_VARS_JSON")" \
+            -var="region=$AWS_REGION" \
+            -var="state_bucket_name=$TF_STATE_BUCKET" \
+            -var="dev_state_key=$TF_STATE_KEY"
+          ./scripts/validate-iam-policies.sh "$validation_dir/iam-validation.tfplan"
+
+      - name: Create backend and variable files
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          printf 'bucket = "%s"\nkey = "%s"\nregion = "%s"\nencrypt = true\nuse_lockfile = true\n' \
+            "$TF_STATE_BUCKET" "$TF_STATE_KEY" "$AWS_REGION" > backend.hcl
+          printf '%s' "$TF_VARS_JSON" > terraform.auto.tfvars.json
+          chmod 600 backend.hcl terraform.auto.tfvars.json
+          jq -e . terraform.auto.tfvars.json > /dev/null
+
+      - name: Initialize Terraform
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false -reconfigure -backend-config=backend.hcl
+
+      - name: Create Terraform plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform plan -no-color -input=false -lock-timeout=5m -out=tfplan
+          terraform show -no-color tfplan > terraform-plan.txt
+
+      - name: Add plan to job summary
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          {
+            echo "## Terraform dev plan"
+            echo
+            echo '```text'
+            sed -n '1,250p' terraform-plan.txt
+            if [ "$(wc -l < terraform-plan.txt)" -gt 250 ]; then
+              echo "... output truncated; download the artifact for the complete plan ..."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload plan output
+        uses: actions/upload-artifact@v6
+        with:
+          name: terraform-dev-plan-${{ github.run_id }}
+          path: environments/dev/terraform-plan.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  apply:
+    name: Apply dev
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.operation == 'apply' &&
+      github.ref == 'refs/heads/main'
+    needs:
+      - quality
+      - validate
+    runs-on: ubuntu-latest
+    environment: terraform-dev
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_TERRAFORM_APPLY_ROLE_ARN: ${{ vars.AWS_TERRAFORM_APPLY_ROLE_ARN }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+      TF_VARS_JSON: ${{ secrets.TF_VARS_JSON }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Read Terraform version
+        id: terraform-version
+        run: echo "version=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate CI configuration
+        run: |
+          : "${AWS_REGION:?Repository variable AWS_REGION is required}"
+          : "${AWS_TERRAFORM_APPLY_ROLE_ARN:?Repository variable AWS_TERRAFORM_APPLY_ROLE_ARN is required}"
+          : "${TF_STATE_BUCKET:?Repository variable TF_STATE_BUCKET is required}"
+          : "${TF_STATE_KEY:?Repository variable TF_STATE_KEY is required}"
+          : "${TF_VARS_JSON:?Repository secret TF_VARS_JSON is required}"
+          : "${CLOUDFLARE_API_TOKEN:?Repository secret CLOUDFLARE_API_TOKEN is required}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.2
+        with:
+          role-to-assume: ${{ env.AWS_TERRAFORM_APPLY_ROLE_ARN }}
+          role-session-name: terraform-apply-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
+          terraform_wrapper: false
+
+      - name: Create Terraform plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-providers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environments/**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-providers-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Validate IAM policies with AWS Access Analyzer
+        run: |
+          validation_dir="environments/.github-actions-bootstrap-validation"
+          mkdir -p "$validation_dir"
+          find environments/github-actions-bootstrap -maxdepth 1 -type f \
+            \( -name '*.tf' -o -name '.terraform.lock.hcl' \) \
+            ! -name 'backend.tf' \
+            -exec cp {} "$validation_dir"/ \;
+
+          terraform -chdir="$validation_dir" init -backend=false -input=false
+          terraform -chdir="$validation_dir" plan \
+            -refresh=false \
+            -lock=false \
+            -input=false \
+            -out=iam-validation.tfplan \
+            -var="project=$(jq -r '.project' <<< "$TF_VARS_JSON")" \
+            -var="environment=$(jq -r '.environment' <<< "$TF_VARS_JSON")" \
+            -var="region=$AWS_REGION" \
+            -var="state_bucket_name=$TF_STATE_BUCKET" \
+            -var="dev_state_key=$TF_STATE_KEY"
+          ./scripts/validate-iam-policies.sh "$validation_dir/iam-validation.tfplan"
+
+      - name: Create backend and variable files
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          printf 'bucket = "%s"\nkey = "%s"\nregion = "%s"\nencrypt = true\nuse_lockfile = true\n' \
+            "$TF_STATE_BUCKET" "$TF_STATE_KEY" "$AWS_REGION" > backend.hcl
+          printf '%s' "$TF_VARS_JSON" > terraform.auto.tfvars.json
+          chmod 600 backend.hcl terraform.auto.tfvars.json
+          jq -e . terraform.auto.tfvars.json > /dev/null
+
+      - name: Initialize Terraform
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false -reconfigure -backend-config=backend.hcl
+
+      - name: Plan Terraform changes
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform plan -no-color -input=false -lock-timeout=5m -out=tfplan
+          terraform show -no-color tfplan > terraform-plan.txt
+
+      - name: Add plan to job summary
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          {
+            echo "## Terraform dev apply plan"
+            echo
+            echo '```text'
+            sed -n '1,250p' terraform-plan.txt
+            if [ "$(wc -l < terraform-plan.txt)" -gt 250 ]; then
+              echo "... output truncated to the first 250 lines ..."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload apply plan output
+        uses: actions/upload-artifact@v6
+        with:
+          name: terraform-dev-apply-plan-${{ github.run_id }}
+          path: environments/dev/terraform-plan.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Apply Terraform changes
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -no-color -input=false -lock-timeout=5m -auto-approve tfplan

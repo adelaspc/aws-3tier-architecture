@@ -11,6 +11,10 @@ locals {
 }
 
 resource "aws_lb" "public_lb" {
+  #checkov:skip=CKV_AWS_91: Access logs are omitted to reduce cost for the short-lived demo
+  #checkov:skip=CKV_AWS_131: Public HTTP redirects to HTTPS and the application is a temporary demo
+  #checkov:skip=CKV_AWS_150: Deletion protection must remain disabled so terraform destroy can clean up the demo
+  #checkov:skip=CKV2_AWS_28: WAF cost and operational overhead are intentionally omitted for the temporary demo
   name               = "${local.name_prefix}-public-alb"
   internal           = false
   load_balancer_type = "application"
