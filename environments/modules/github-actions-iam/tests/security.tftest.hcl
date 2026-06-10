@@ -90,6 +90,11 @@ run "github_actions_security_model" {
   }
 
   assert {
+    condition     = strcontains(data.aws_iam_policy_document.plan_permissions.json, "rds:ListTagsForResource")
+    error_message = "Plan permissions must allow reading tags for RDS resources."
+  }
+
+  assert {
     condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "iam:PassedToService") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "ec2.amazonaws.com")
     error_message = "PassRole must be limited to EC2 through iam:PassedToService."
   }

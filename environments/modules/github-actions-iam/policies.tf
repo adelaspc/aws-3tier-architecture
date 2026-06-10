@@ -56,6 +56,7 @@ data "aws_iam_policy_document" "plan_permissions" {
       "iam:Get*",
       "iam:List*",
       "rds:Describe*",
+      "rds:ListTagsForResource",
       "route53:Get*",
       "route53:List*",
       "ssm:DescribeParameters",
