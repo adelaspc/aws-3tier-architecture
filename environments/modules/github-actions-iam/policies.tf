@@ -112,6 +112,81 @@ data "aws_iam_policy_document" "plan_permissions" {
   }
 }
 
+data "aws_iam_policy_document" "app_deploy_permissions" {
+  statement {
+    sid       = "AuthenticateToECR"
+    effect    = "Allow"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "PushApplicationImages"
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:CompleteLayerUpload",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:ecr:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repository_name}",
+    ]
+  }
+
+  statement {
+    sid    = "ReadDeploymentTargets"
+    effect = "Allow"
+    actions = [
+      "autoscaling:DescribeAutoScalingGroups",
+      "autoscaling:DescribeInstanceRefreshes",
+      "ssm:DescribeInstanceInformation",
+      "ssm:GetCommandInvocation",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid     = "RefreshApplicationTiers"
+    effect  = "Allow"
+    actions = ["autoscaling:StartInstanceRefresh"]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:autoscaling:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:autoScalingGroup:*:autoScalingGroupName/${local.name_prefix}-app-asg",
+      "arn:${data.aws_partition.current.partition}:autoscaling:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:autoScalingGroup:*:autoScalingGroupName/${local.name_prefix}-web-asg",
+    ]
+  }
+
+  statement {
+    sid     = "RunDatabaseMigration"
+    effect  = "Allow"
+    actions = ["ssm:SendCommand"]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:ec2:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:instance/*",
+      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.region}::document/AWS-RunShellScript",
+    ]
+  }
+
+  statement {
+    sid    = "UpdateApplicationImageTags"
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameter",
+      "ssm:PutParameter",
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.deployment_app_ssm_prefix}/images/*",
+    ]
+  }
+
+  statement {
+    sid       = "DenyAssumingOtherRoles"
+    effect    = "Deny"
+    actions   = ["sts:AssumeRole"]
+    resources = ["*"]
+  }
+}
+
 data "aws_iam_policy_document" "apply_permissions" {
   source_policy_documents = [data.aws_iam_policy_document.backend_access.json]
 
@@ -330,7 +405,7 @@ data "aws_iam_policy_document" "apply_permissions" {
       "iam:UpdateRole",
       "iam:UpdateRoleDescription",
     ]
-    resources = [local.plan_role_arn, local.apply_role_arn]
+    resources = [local.plan_role_arn, local.apply_role_arn, local.app_deploy_role_arn]
   }
 
   statement {
@@ -345,7 +420,7 @@ data "aws_iam_policy_document" "apply_permissions" {
       "iam:TagPolicy",
       "iam:UntagPolicy",
     ]
-    resources = [local.plan_policy_arn, local.apply_policy_arn]
+    resources = [local.plan_policy_arn, local.apply_policy_arn, local.app_deploy_policy_arn]
   }
 
   statement {
