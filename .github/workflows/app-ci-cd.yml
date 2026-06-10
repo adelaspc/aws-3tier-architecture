@@ -66,7 +66,10 @@ jobs:
     name: Build images and deploy
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment: app-dev
 
     steps:
       - name: Checkout
