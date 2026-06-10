@@ -215,8 +215,6 @@ jobs:
             terraform-providers-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Validate IAM policies with AWS Access Analyzer
-        env:
-          TF_DATA_DIR: ${{ runner.temp }}/terraform-iam-validation
         run: |
           validation_dir="environments/.github-actions-bootstrap-validation"
           mkdir -p "$validation_dir"
@@ -343,8 +341,6 @@ jobs:
             terraform-providers-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Validate IAM policies with AWS Access Analyzer
-        env:
-          TF_DATA_DIR: ${{ runner.temp }}/terraform-iam-validation
         run: |
           validation_dir="environments/.github-actions-bootstrap-validation"
           mkdir -p "$validation_dir"

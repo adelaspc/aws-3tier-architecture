@@ -7,6 +7,8 @@ if [[ $# -ne 1 ]]; then
 fi
 
 plan_file=$1
+plan_dir=$(dirname "$plan_file")
+plan_name=$(basename "$plan_file")
 findings_file=$(mktemp)
 trap 'rm -f "$findings_file"' EXIT
 
@@ -29,7 +31,7 @@ validate_policy() {
   jq -e '[.findings[] | select(.findingType == "ERROR")] | length == 0' "$findings_file" > /dev/null
 }
 
-plan_json=$(terraform show -json "$plan_file")
+plan_json=$(terraform -chdir="$plan_dir" show -json "$plan_name")
 
 mapfile -t identity_policies < <(
   jq -r '
