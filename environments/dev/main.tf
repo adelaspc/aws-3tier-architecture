@@ -81,7 +81,6 @@ module "dns" {
   source = "../modules/dns"
 
   vpc_id                = module.vpc.vpc_id
-  public_zone_name      = var.public_zone_name
   cloudflare_zone_id    = var.cloudflare_zone_id
   public_record_name    = var.public_record_name
   public_alb_dns_name   = module.load_balancers.public_alb_dns_name
