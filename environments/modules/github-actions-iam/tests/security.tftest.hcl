@@ -85,6 +85,11 @@ run "github_actions_security_model" {
   }
 
   assert {
+    condition     = strcontains(data.aws_iam_policy_document.plan_permissions.json, "ssm:ListTagsForResource") && strcontains(data.aws_iam_policy_document.plan_permissions.json, "parameter/dev/deployment-app/*")
+    error_message = "Plan permissions must allow reading tags for application SSM parameters."
+  }
+
+  assert {
     condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "iam:PassedToService") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "ec2.amazonaws.com")
     error_message = "PassRole must be limited to EC2 through iam:PassedToService."
   }
