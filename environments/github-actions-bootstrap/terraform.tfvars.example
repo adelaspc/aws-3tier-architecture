@@ -1,0 +1,11 @@
+project     = "project-name"
+environment = "dev"
+region      = "us-east-1"
+
+github_repository  = "adelaspc/aws-3tier-architecture"
+github_environment = "terraform-dev"
+
+state_bucket_name = "project-name-dev-terraform-state"
+dev_state_key     = "aws-3tier-architecture/dev/terraform.tfstate"
+
+deployment_app_ssm_prefix   = "/dev/deployment-app"
