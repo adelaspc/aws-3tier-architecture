@@ -4,6 +4,9 @@ region      = "us-east-1"
 
 github_repository  = "adelaspc/aws-3tier-architecture"
 github_environment = "terraform-dev"
+github_app_environment = "app-dev"
+
+ecr_repository_name = "deployments-notes-app"
 
 state_bucket_name = "project-name-dev-terraform-state"
 dev_state_key     = "aws-3tier-architecture/dev/terraform.tfstate"
