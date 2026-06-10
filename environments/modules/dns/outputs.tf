@@ -1,5 +1,5 @@
 output "public_fqdn" {
-  value = "${cloudflare_dns_record.public_app.name}.${var.public_zone_name}"
+  value = cloudflare_dns_record.public_app.name
 }
 
 output "private_fqdn" {

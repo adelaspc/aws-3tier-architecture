@@ -85,8 +85,28 @@ run "github_actions_security_model" {
   }
 
   assert {
+    condition     = strcontains(data.aws_iam_policy_document.plan_permissions.json, "ssm:ListTagsForResource") && strcontains(data.aws_iam_policy_document.plan_permissions.json, "parameter/dev/deployment-app/*")
+    error_message = "Plan permissions must allow reading tags for application SSM parameters."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.plan_permissions.json, "rds:ListTagsForResource")
+    error_message = "Plan permissions must allow reading tags for RDS resources."
+  }
+
+  assert {
     condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "iam:PassedToService") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "ec2.amazonaws.com")
     error_message = "PassRole must be limited to EC2 through iam:PassedToService."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:CreateGrant") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:GrantIsForAWSResource") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "rds.eu-central-1.amazonaws.com")
+    error_message = "KMS grants must be restricted to AWS resources used through RDS."
+  }
+
+  assert {
+    condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "kms:ViaService") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "secretsmanager.eu-central-1.amazonaws.com")
+    error_message = "KMS key usage must be restricted to RDS and Secrets Manager service calls."
   }
 
   assert {

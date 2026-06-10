@@ -56,6 +56,7 @@ data "aws_iam_policy_document" "plan_permissions" {
       "iam:Get*",
       "iam:List*",
       "rds:Describe*",
+      "rds:ListTagsForResource",
       "route53:Get*",
       "route53:List*",
       "ssm:DescribeParameters",
@@ -83,6 +84,7 @@ data "aws_iam_policy_document" "plan_permissions" {
       "ssm:GetParameter",
       "ssm:GetParameters",
       "ssm:GetParametersByPath",
+      "ssm:ListTagsForResource",
     ]
     resources = [
       "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.deployment_app_ssm_prefix}/*",
@@ -165,6 +167,54 @@ data "aws_iam_policy_document" "apply_permissions" {
       for pattern in local.application_role_patterns :
       "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${pattern}"
     ]
+  }
+
+  statement {
+    #checkov:skip=CKV_AWS_111: KMS key IDs are AWS-managed and discovered at runtime; service conditions restrict use to RDS and Secrets Manager
+    sid    = "UseApplicationServiceKMSKeys"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey",
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:kms:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:key/*",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values = [
+        "rds.${data.aws_region.current.region}.amazonaws.com",
+        "secretsmanager.${data.aws_region.current.region}.amazonaws.com",
+      ]
+    }
+  }
+
+  statement {
+    #checkov:skip=CKV_AWS_111: KMS key IDs are AWS-managed and discovered at runtime; grants are limited to AWS resources through RDS and Secrets Manager
+    sid     = "CreateApplicationServiceKMSGrants"
+    effect  = "Allow"
+    actions = ["kms:CreateGrant"]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:kms:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:key/*",
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values = [
+        "rds.${data.aws_region.current.region}.amazonaws.com",
+        "secretsmanager.${data.aws_region.current.region}.amazonaws.com",
+      ]
+    }
   }
 
   statement {
