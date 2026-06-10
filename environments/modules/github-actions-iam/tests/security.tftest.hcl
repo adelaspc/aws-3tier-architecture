@@ -112,8 +112,8 @@ run "github_actions_security_model" {
   }
 
   assert {
-    condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "repository/deployments-notes-app") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ecr:PutImage")
-    error_message = "App deployment must push images only to the configured ECR repository."
+    condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "repository/deployments-notes-app") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ecr:PutImage") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ecr:BatchGetImage") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ecr:GetDownloadUrlForLayer")
+    error_message = "App deployment must read and push images only in the configured ECR repository."
   }
 
   assert {
