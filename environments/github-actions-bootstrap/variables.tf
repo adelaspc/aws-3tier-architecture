@@ -20,6 +20,16 @@ variable "github_environment" {
   default = "terraform-dev"
 }
 
+variable "github_app_environment" {
+  type    = string
+  default = "app-dev"
+}
+
+variable "ecr_repository_name" {
+  type    = string
+  default = "deployments-notes-app"
+}
+
 variable "state_bucket_name" {
   type = string
 }
