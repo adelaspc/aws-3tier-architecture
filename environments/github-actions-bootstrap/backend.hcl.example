@@ -1,5 +1,5 @@
 bucket         = "project-name-dev-terraform-state"
-key            = "aws-3tier-architecture/dev/terraform.tfstate"
+key            = "aws-3tier-architecture/github-actions-bootstrap/terraform.tfstate"
 region         = "us-east-1"
 encrypt        = true
 use_lockfile   = true
