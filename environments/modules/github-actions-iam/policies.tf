@@ -170,6 +170,25 @@ data "aws_iam_policy_document" "apply_permissions" {
   }
 
   statement {
+    sid    = "ManageRDSMasterUserSecrets"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:CreateSecret",
+      "secretsmanager:DeleteSecret",
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:GetResourcePolicy",
+      "secretsmanager:ListSecretVersionIds",
+      "secretsmanager:RestoreSecret",
+      "secretsmanager:TagResource",
+      "secretsmanager:UntagResource",
+      "secretsmanager:UpdateSecret",
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:rds!db-*",
+    ]
+  }
+
+  statement {
     #checkov:skip=CKV_AWS_111: KMS key IDs are AWS-managed and discovered at runtime; service conditions restrict use to RDS and Secrets Manager
     sid    = "UseApplicationServiceKMSKeys"
     effect = "Allow"

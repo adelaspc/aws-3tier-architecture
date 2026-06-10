@@ -110,6 +110,11 @@ run "github_actions_security_model" {
   }
 
   assert {
+    condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "secretsmanager:CreateSecret") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "secret:rds!db-*") && !strcontains(data.aws_iam_policy_document.apply_permissions.json, "secretsmanager:GetSecretValue")
+    error_message = "Apply permissions must manage only RDS master-user secrets without reading their values."
+  }
+
+  assert {
     condition     = strcontains(data.aws_iam_policy_document.apply_permissions.json, "role/deployment-notes-dev-web-*") && strcontains(data.aws_iam_policy_document.apply_permissions.json, "role/deployment-notes-dev-app-*")
     error_message = "Application IAM permissions must be scoped to web/app role prefixes."
   }
