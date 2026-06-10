@@ -218,8 +218,15 @@ jobs:
         env:
           TF_DATA_DIR: ${{ runner.temp }}/terraform-iam-validation
         run: |
-          terraform -chdir=environments/github-actions-bootstrap init -backend=false -input=false
-          terraform -chdir=environments/github-actions-bootstrap plan \
+          validation_dir="environments/.github-actions-bootstrap-validation"
+          mkdir -p "$validation_dir"
+          find environments/github-actions-bootstrap -maxdepth 1 -type f \
+            \( -name '*.tf' -o -name '.terraform.lock.hcl' \) \
+            ! -name 'backend.tf' \
+            -exec cp {} "$validation_dir"/ \;
+
+          terraform -chdir="$validation_dir" init -backend=false -input=false
+          terraform -chdir="$validation_dir" plan \
             -refresh=false \
             -lock=false \
             -input=false \
@@ -229,7 +236,7 @@ jobs:
             -var="region=$AWS_REGION" \
             -var="state_bucket_name=$TF_STATE_BUCKET" \
             -var="dev_state_key=$TF_STATE_KEY"
-          ./scripts/validate-iam-policies.sh environments/github-actions-bootstrap/iam-validation.tfplan
+          ./scripts/validate-iam-policies.sh "$validation_dir/iam-validation.tfplan"
 
       - name: Create backend and variable files
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -339,8 +346,15 @@ jobs:
         env:
           TF_DATA_DIR: ${{ runner.temp }}/terraform-iam-validation
         run: |
-          terraform -chdir=environments/github-actions-bootstrap init -backend=false -input=false
-          terraform -chdir=environments/github-actions-bootstrap plan \
+          validation_dir="environments/.github-actions-bootstrap-validation"
+          mkdir -p "$validation_dir"
+          find environments/github-actions-bootstrap -maxdepth 1 -type f \
+            \( -name '*.tf' -o -name '.terraform.lock.hcl' \) \
+            ! -name 'backend.tf' \
+            -exec cp {} "$validation_dir"/ \;
+
+          terraform -chdir="$validation_dir" init -backend=false -input=false
+          terraform -chdir="$validation_dir" plan \
             -refresh=false \
             -lock=false \
             -input=false \
@@ -350,7 +364,7 @@ jobs:
             -var="region=$AWS_REGION" \
             -var="state_bucket_name=$TF_STATE_BUCKET" \
             -var="dev_state_key=$TF_STATE_KEY"
-          ./scripts/validate-iam-policies.sh environments/github-actions-bootstrap/iam-validation.tfplan
+          ./scripts/validate-iam-policies.sh "$validation_dir/iam-validation.tfplan"
 
       - name: Create backend and variable files
         working-directory: ${{ env.TF_WORKING_DIR }}
