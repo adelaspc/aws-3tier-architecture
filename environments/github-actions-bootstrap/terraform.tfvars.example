@@ -1,14 +1,19 @@
-project     = "project-name"
+# Replace these values before running Terraform.
+project     = "aws-3tier"
 environment = "dev"
 region      = "us-east-1"
 
-github_repository  = "adelaspc/aws-3tier-architecture"
-github_environment = "terraform-dev"
+# Repository and GitHub Environment names must match the workflow configuration.
+github_repository      = "adelaspc/aws-3tier-architecture"
+github_environment     = "terraform-dev"
 github_app_environment = "app-dev"
 
+# This ECR repository is a prerequisite and is not created by this Terraform stack.
 ecr_repository_name = "deployments-notes-app"
 
-state_bucket_name = "project-name-dev-terraform-state"
+# Must match the backend bootstrap output.
+state_bucket_name = "aws-3tier-dev-terraform-state-example"
 dev_state_key     = "aws-3tier-architecture/dev/terraform.tfstate"
 
-deployment_app_ssm_prefix   = "/dev/deployment-app"
+# Optional override. Must start with / when set.
+deployment_app_ssm_prefix = "/dev/deployment-app"

@@ -125,7 +125,9 @@ data "aws_iam_policy_document" "app_deploy_permissions" {
     effect = "Allow"
     actions = [
       "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
       "ecr:CompleteLayerUpload",
+      "ecr:GetDownloadUrlForLayer",
       "ecr:InitiateLayerUpload",
       "ecr:PutImage",
       "ecr:UploadLayerPart",
@@ -158,13 +160,39 @@ data "aws_iam_policy_document" "app_deploy_permissions" {
   }
 
   statement {
-    sid     = "RunDatabaseMigration"
+    sid     = "UseDatabaseMigrationDocument"
+    effect  = "Allow"
+    actions = ["ssm:SendCommand"]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.region}::document/AWS-RunShellScript",
+    ]
+  }
+
+  statement {
+    sid     = "RunDatabaseMigrationOnAppInstances"
     effect  = "Allow"
     actions = ["ssm:SendCommand"]
     resources = [
       "arn:${data.aws_partition.current.partition}:ec2:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:instance/*",
-      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.region}::document/AWS-RunShellScript",
     ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "ssm:resourceTag/Project"
+      values   = [var.project]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "ssm:resourceTag/Environment"
+      values   = [var.environment]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "ssm:resourceTag/Tier"
+      values   = ["app"]
+    }
   }
 
   statement {

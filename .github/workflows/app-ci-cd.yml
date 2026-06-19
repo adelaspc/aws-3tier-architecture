@@ -19,6 +19,7 @@ permissions:
 env:
   APP_DIR: deployment-notes
   AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_APP_DEPLOY_ROLE_ARN: ${{ vars.AWS_APP_DEPLOY_ROLE_ARN }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
   BACKEND_IMAGE_TAG: backend-${{ github.sha }}
   FRONTEND_IMAGE_TAG: frontend-${{ github.sha }}
@@ -75,10 +76,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate app deploy configuration
+        run: |
+          : "${AWS_REGION:?AWS_REGION GitHub variable is required}"
+          : "${AWS_APP_DEPLOY_ROLE_ARN:?AWS_APP_DEPLOY_ROLE_ARN GitHub variable is required}"
+          : "${ECR_REPOSITORY:?ECR_REPOSITORY GitHub variable is required}"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_APP_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ env.AWS_APP_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Docker Buildx
@@ -113,7 +120,7 @@ jobs:
           APP_ENV: ${{ vars.APP_ENV }}
           APP_ASG_NAME: ${{ vars.APP_ASG_NAME }}
           BACKEND_CONTAINER_NAME: ${{ vars.BACKEND_CONTAINER_NAME }}
-          DATABASE_URL_PARAMETER_NAME: ${{ vars.DATABASE_URL_PARAMETER_NAME }}
+          DATABASE_CONFIG_PARAMETER_NAME: ${{ vars.DATABASE_CONFIG_PARAMETER_NAME }}
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
           set -euo pipefail
@@ -121,7 +128,7 @@ jobs:
           : "${APP_ENV:=dev}"
           : "${BACKEND_CONTAINER_NAME:=deployment-notes-backend}"
           : "${APP_ASG_NAME:?APP_ASG_NAME GitHub variable is required}"
-          : "${DATABASE_URL_PARAMETER_NAME:?DATABASE_URL_PARAMETER_NAME GitHub variable is required}"
+          : "${DATABASE_CONFIG_PARAMETER_NAME:?DATABASE_CONFIG_PARAMETER_NAME GitHub variable is required}"
 
           BACKEND_IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:${BACKEND_IMAGE_TAG}"
 
@@ -161,14 +168,14 @@ jobs:
             --arg backend_image_uri "${BACKEND_IMAGE_URI}" \
             --arg backend_container_name "${BACKEND_CONTAINER_NAME}" \
             --arg app_env "${APP_ENV}" \
-            --arg database_url_parameter_name "${DATABASE_URL_PARAMETER_NAME}" \
+            --arg database_config_parameter_name "${DATABASE_CONFIG_PARAMETER_NAME}" \
             '{
               commands: [
                 "set -euo pipefail",
                 "aws ecr get-login-password --region \($aws_region) | docker login --username AWS --password-stdin \($ecr_registry)",
                 "docker pull \($backend_image_uri)",
                 "docker rm -f \($backend_container_name)-migration 2>/dev/null || true",
-                "docker run --rm --name \($backend_container_name)-migration -e DEPLOYMENT_NOTES_ENV=\($app_env) -e DEPLOYMENT_NOTES_SERVE_FRONTEND=false -e DEPLOYMENT_NOTES_DATABASE_URL_SSM_PARAM=\($database_url_parameter_name) -e AWS_REGION=\($aws_region) -e AWS_DEFAULT_REGION=\($aws_region) -e FLASK_APP=wsgi.py \($backend_image_uri) flask --app wsgi.py db upgrade"
+                "docker run --rm --name \($backend_container_name)-migration -e DEPLOYMENT_NOTES_ENV=\($app_env) -e DEPLOYMENT_NOTES_SERVE_FRONTEND=false -e DEPLOYMENT_NOTES_DATABASE_CONFIG_SSM_PARAM=\($database_config_parameter_name) -e AWS_REGION=\($aws_region) -e AWS_DEFAULT_REGION=\($aws_region) -e FLASK_APP=wsgi.py \($backend_image_uri) flask --app wsgi.py db upgrade"
               ]
             }' > commands.json
 

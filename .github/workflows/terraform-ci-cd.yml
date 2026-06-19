@@ -7,6 +7,7 @@ on:
     paths:
       - "environments/**"
       - ".github/workflows/terraform-ci-cd.yml"
+      - ".terraform-docs.yml"
       - ".terraform-version"
       - ".tflint.hcl"
   push:
@@ -15,6 +16,7 @@ on:
     paths:
       - "environments/**"
       - ".github/workflows/terraform-ci-cd.yml"
+      - ".terraform-docs.yml"
       - ".terraform-version"
       - ".tflint.hcl"
   workflow_dispatch:
@@ -40,6 +42,7 @@ env:
   TF_INPUT: "false"
   TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
   TF_WORKING_DIR: environments/dev
+  TERRAFORM_DOCS_VERSION: v0.24.0
   TFLINT_VERSION: v0.60.0
 
 jobs:
@@ -74,6 +77,23 @@ jobs:
 
       - name: Check Terraform formatting
         run: terraform fmt -check -recursive environments
+
+      - name: Install terraform-docs
+        run: |
+          curl -sSLo terraform-docs.tar.gz "https://github.com/terraform-docs/terraform-docs/releases/download/${TERRAFORM_DOCS_VERSION}/terraform-docs-${TERRAFORM_DOCS_VERSION}-linux-amd64.tar.gz"
+          tar -xzf terraform-docs.tar.gz terraform-docs
+          sudo mv terraform-docs /usr/local/bin/terraform-docs
+          terraform-docs --version
+
+      - name: Check generated Terraform docs
+        run: |
+          for module_dir in environments/modules/*; do
+            [ -d "$module_dir" ] || continue
+            terraform-docs --config .terraform-docs.yml "$module_dir"
+          done
+
+          terraform-docs --config .terraform-docs.yml environments/dev
+          git diff --exit-code -- environments/modules environments/dev
 
       - name: Initialize GitHub Actions IAM test module
         working-directory: environments/modules/github-actions-iam

@@ -1,0 +1,61 @@
+repos:
+  - repo: local
+    hooks:
+      - id: terraform-fmt
+        name: terraform fmt
+        entry: terraform fmt -check -recursive environments
+        language: system
+        pass_filenames: false
+        files: ^environments/.*\.tf$
+
+      - id: terraform-validate
+        name: terraform validate
+        entry: |
+          bash -c '
+          terraform -chdir=environments/backend-bootstrap init -backend=false -input=false &&
+          terraform -chdir=environments/backend-bootstrap validate -no-color &&
+          terraform -chdir=environments/dev init -backend=false -input=false &&
+          terraform -chdir=environments/dev validate -no-color &&
+          terraform -chdir=environments/github-actions-bootstrap init -backend=false -input=false &&
+          terraform -chdir=environments/github-actions-bootstrap validate -no-color &&
+          terraform -chdir=environments/modules/github-actions-iam init -backend=false -input=false &&
+          terraform -chdir=environments/modules/github-actions-iam test -no-color
+          '
+        language: system
+        pass_filenames: false
+        files: ^environments/.*\.(tf|hcl|tfvars|tftest\.hcl)$
+
+      - id: terraform-docs
+        name: terraform-docs
+        entry: |
+          bash -c '
+          for module_dir in environments/modules/*; do
+            [ -d "$module_dir" ] || continue
+            terraform-docs --config .terraform-docs.yml "$module_dir"
+          done
+          terraform-docs --config .terraform-docs.yml environments/dev
+          terraform-docs --config .terraform-docs.yml environments/github-actions-bootstrap
+          git diff --exit-code -- environments/modules/*/README.md environments/dev/README.md environments/github-actions-bootstrap/README.md
+          '
+        language: system
+        pass_filenames: false
+        files: ^(environments/.*\.tf|\.terraform-docs\.yml)$
+
+      - id: tflint
+        name: tflint
+        entry: |
+          bash -c '
+          repo_root="$(pwd)"
+          cd environments
+          tflint --recursive --format compact --config "$repo_root/.tflint.hcl"
+          '
+        language: system
+        pass_filenames: false
+        files: ^environments/.*\.tf$
+
+      - id: checkov
+        name: checkov
+        entry: checkov --directory environments --framework terraform --quiet --compact
+        language: system
+        pass_filenames: false
+        files: ^environments/.*\.tf$

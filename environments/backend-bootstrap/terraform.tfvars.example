@@ -1,5 +1,8 @@
-project     = "project-name"
+# Replace these values before running Terraform.
+# project and environment are used for tags and resource names.
+project     = "aws-3tier"
 environment = "dev"
 region      = "us-east-1"
 
-state_bucket_name = "project-name-dev-terraform-state"
+# S3 bucket names are global. Include a unique suffix for a real deployment.
+state_bucket_name = "aws-3tier-dev-terraform-state-example"

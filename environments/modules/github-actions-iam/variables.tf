@@ -1,9 +1,11 @@
 variable "project" {
-  type = string
+  description = "Project name used for IAM role and policy names."
+  type        = string
 }
 
 variable "environment" {
-  type = string
+  description = "Environment name used for IAM role and policy names."
+  type        = string
 }
 
 variable "github_repository" {
@@ -17,29 +19,35 @@ variable "github_repository" {
 }
 
 variable "github_environment" {
-  type    = string
-  default = "terraform-dev"
+  description = "GitHub Environment name allowed to assume the Terraform apply role."
+  type        = string
+  default     = "terraform-dev"
 }
 
 variable "github_app_environment" {
-  type    = string
-  default = "app-dev"
+  description = "GitHub Environment name allowed to assume the application deployment role."
+  type        = string
+  default     = "app-dev"
 }
 
 variable "ecr_repository_name" {
-  type    = string
-  default = "deployments-notes-app"
+  description = "ECR repository name that the application deployment role can push to."
+  type        = string
+  default     = "deployments-notes-app"
 }
 
 variable "state_bucket_name" {
-  type = string
+  description = "S3 bucket name containing Terraform remote state."
+  type        = string
 }
 
 variable "dev_state_key" {
-  type = string
+  description = "S3 object key for the dev Terraform state file."
+  type        = string
 }
 
 variable "deployment_app_ssm_prefix" {
-  type    = string
-  default = null
+  description = "SSM Parameter Store prefix used by application deployment image tag parameters."
+  type        = string
+  default     = null
 }
