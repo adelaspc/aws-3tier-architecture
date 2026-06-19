@@ -330,9 +330,10 @@ The table also includes a unique constraint named `uq_deployment_app_version_env
 | Variable | Required | Description |
 | --- | --- | --- |
 | `DEPLOYMENT_NOTES_ENV` | Recommended | Set to `development`, `local`, or `test` to enable the SQLite fallback when no database URL is provided. |
-| `DEPLOYMENT_NOTES_DATABASE_URL` | Required outside local/test-style environments unless `DEPLOYMENT_NOTES_DATABASE_URL_SSM_PARAM` is set | SQLAlchemy database URL. Examples: `sqlite:///instance/deployment_notes.db` or `mysql+pymysql://user:password@host:3306/dbname`. Takes precedence over the SSM parameter option when both are set. |
-| `DEPLOYMENT_NOTES_DATABASE_URL_SSM_PARAM` | Optional | AWS SSM Parameter Store name containing the full SQLAlchemy database URL as a SecureString. Useful on EC2 because Docker receives only the parameter name, not the database password. |
-| `AWS_REGION` / `AWS_DEFAULT_REGION` | Required when using SSM | AWS region used by boto3 to read `DEPLOYMENT_NOTES_DATABASE_URL_SSM_PARAM`. |
+| `DEPLOYMENT_NOTES_DATABASE_URL` | Required outside local/test-style environments unless an SSM database parameter is set | SQLAlchemy database URL. Examples: `sqlite:///instance/deployment_notes.db` or `mysql+pymysql://user:password@host:3306/dbname`. Takes precedence over SSM-based options when set. |
+| `DEPLOYMENT_NOTES_DATABASE_CONFIG_SSM_PARAM` | Recommended on AWS | AWS SSM Parameter Store name containing non-secret DB metadata as JSON: host, port, database, username, and the AWS-managed RDS secret ARN. The app reads the password from Secrets Manager at runtime. |
+| `DEPLOYMENT_NOTES_DATABASE_URL_SSM_PARAM` | Legacy optional fallback | AWS SSM Parameter Store name containing the full SQLAlchemy database URL as a SecureString. Prefer `DEPLOYMENT_NOTES_DATABASE_CONFIG_SSM_PARAM` for Terraform-managed AWS deployments. |
+| `AWS_REGION` / `AWS_DEFAULT_REGION` | Required when using AWS SSM/Secrets Manager | AWS region used by boto3 to read SSM parameters and Secrets Manager secrets. |
 | `DEPLOYMENT_NOTES_SERVE_FRONTEND` | Optional | Set to `true` to let Flask serve the compiled Vue app. Defaults to `true` only for `development`, `local`, and `test`; defaults to API-only outside those environments. |
 | `FLASK_APP` | Required for Flask CLI commands | Use `wsgi.py`. |
 | `PORT` | Optional | Runtime port used by the Docker container. Defaults to `5000`. |

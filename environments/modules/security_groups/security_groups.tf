@@ -109,11 +109,11 @@ resource "aws_vpc_security_group_egress_rule" "web_to_https_internet" {
 resource "aws_vpc_security_group_egress_rule" "web_to_internal_alb" {
   security_group_id = aws_security_group.web_ec2.id
 
-  description = "Allow traffic to internal ALB from web EC2"
+  description = "Allow HTTP traffic to internal ALB from web EC2"
 
   ip_protocol                  = "tcp"
-  from_port                    = var.web_port
-  to_port                      = var.web_port
+  from_port                    = 80
+  to_port                      = 80
   referenced_security_group_id = aws_security_group.internal_alb.id
 }
 
@@ -122,9 +122,9 @@ resource "aws_vpc_security_group_ingress_rule" "internal_alb_from_web" {
   #checkov:skip=CKV_AWS_260: Source is a referenced security group, not an unrestricted IPv4 CIDR
   security_group_id            = aws_security_group.internal_alb.id
   description                  = "Allow HTTP from web EC2 instances"
-  from_port                    = var.web_port
+  from_port                    = 80
   ip_protocol                  = "tcp"
-  to_port                      = var.web_port
+  to_port                      = 80
   referenced_security_group_id = aws_security_group.web_ec2.id
 }
 

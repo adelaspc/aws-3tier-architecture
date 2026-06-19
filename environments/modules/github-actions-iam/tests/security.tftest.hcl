@@ -127,6 +127,11 @@ run "github_actions_security_model" {
   }
 
   assert {
+    condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "RunDatabaseMigrationOnAppInstances") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ssm:resourceTag/Project") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ssm:resourceTag/Environment") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ssm:resourceTag/Tier") && strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "\"app\"")
+    error_message = "App deployment SSM migration commands must be restricted to app-tier instances by resource tags."
+  }
+
+  assert {
     condition     = strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "parameter/dev/deployment-app/images/*") && !strcontains(data.aws_iam_policy_document.app_deploy_permissions.json, "ssm:GetParameterHistory")
     error_message = "App deployment parameter writes must be limited to image tags."
   }

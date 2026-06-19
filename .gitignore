@@ -2,8 +2,16 @@
 **/.terraform/
 *.tfstate
 *.tfstate.*
+.terraform.tfstate.lock.info
 crash.log
 crash.*.log
+*.tfplan
+*.tfplan.*
+*.plan
+*.plan.*
+tfplan
+tfplan.*
+plan.out
 override.tf
 override.tf.json
 *_override.tf
@@ -43,6 +51,9 @@ credentials.*
 .azure/
 .kube/
 .terraform.d/
+.tflint.d/
+.checkov/
+.infracost/
 
 # Python
 __pycache__/
@@ -55,9 +66,17 @@ env/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.pyre/
+.pytype/
+.tox/
+.nox/
 .coverage
+.coverage.*
 coverage/
 htmlcov/
+coverage.xml
+junit.xml
+test-results/
 
 # Flask/local app state
 instance/
@@ -72,8 +91,19 @@ dist/
 **/dist/
 build/
 **/build/
+.vite/
+**/.vite/
+.next/
+**/.next/
+.nuxt/
+**/.nuxt/
+coverage-final.json
 .npm-cache/
 **/.npm-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Logs, temp files, dumps, and generated archives
 *.log
@@ -91,6 +121,15 @@ temp/
 *.tar
 *.tar.gz
 *.tgz
+*.rar
+*.7z
+
+# Local reports and scan output
+checkov-report.*
+tflint-report.*
+tfsec-report.*
+infracost.*
+*.sarif
 
 # OS and editor files
 .DS_Store
@@ -98,6 +137,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.code-workspace
+*.sublime-project
+*.sublime-workspace
 
 # Codex/local agent metadata
 .agents/
