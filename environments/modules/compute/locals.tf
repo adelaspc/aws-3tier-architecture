@@ -5,6 +5,7 @@ locals {
     Project     = var.project
     Environment = var.environment
     ManagedBy   = "terraform"
+    Owner       = "Adela"
   }
 
   deployment_app_prefix       = coalesce(var.deployment_app_ssm_prefix, "/${var.environment}/deployment-app")
@@ -31,5 +32,5 @@ locals {
     }
   }
 
-  database_url_parameter_name = "${local.deployment_app_prefix}/db/database-url"
+  database_config_parameter_name = "${local.deployment_app_prefix}/db/config"
 }

@@ -1,4 +1,5 @@
-project     = "project-name"
+# Replace placeholder values before running Terraform.
+project     = "aws-3tier"
 region      = "us-east-1"
 environment = "dev"
 
@@ -31,9 +32,11 @@ db_subnets = [
 
 public_zone_name   = "example.com"
 public_record_name = "www"
-cloudflare_zone_id = "zone-id"
+cloudflare_zone_id = "00000000000000000000000000000000"
 cloudflare_proxied = false
-custom_ami_id      = "ami-id"
+
+# Must be a baked AMI that includes Docker, AWS CLI, SSM Agent, and CloudWatch Agent.
+custom_ami_id = "ami-0123456789abcdef0"
 
 ecr_repository_name        = "deployments-notes-app"
 initial_backend_image_tag  = "1.0.0"
@@ -49,4 +52,29 @@ backend_gunicorn_threads    = 4
 container_health_check_attempts         = 10
 container_health_check_interval_seconds = 3
 
-acm_certificate_arn = "arn:aws:acm:<aws-region>:<account-id>:certificate/12345..."
+# RDS demo defaults. For a production-like test, consider enabling deletion
+# protection, retaining a final snapshot, and setting apply_immediately=false.
+db_engine_version            = "8.0"
+db_instance_class            = "db.t3.micro"
+db_allocated_storage         = 20
+db_max_allocated_storage     = 100
+db_storage_type              = "gp3"
+database_name                = "deployment_notes"
+db_master_username           = "rhaast"
+db_multi_az                  = true
+db_backup_retention_period   = 7
+db_deletion_protection       = false
+db_skip_final_snapshot       = true
+db_final_snapshot_identifier = null
+db_apply_immediately         = true
+
+# Optional. Set to null to let Terraform look up the most recent issued
+# certificate for public_zone_name in the selected AWS region.
+acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
+
+# Optional. Disabled by default to reduce demo cost.
+# alb_access_logs = {
+#   enabled        = true
+#   object_prefix  = "dev"
+#   retention_days = 7
+# }

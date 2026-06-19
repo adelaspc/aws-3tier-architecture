@@ -17,7 +17,7 @@ CLOUDWATCH_LOG_RETENTION_DAYS="${cloudwatch_log_retention_days}"
 CW_AGENT_SSM_CONFIG_PARAM="${cloudwatch_agent_parameter}"
 
 DEPLOYMENT_NOTES_LOG_LEVEL="${backend_log_level}"
-SSM_DATABASE_URL_PARAM="${database_url_parameter_name}"
+SSM_DATABASE_CONFIG_PARAM="${database_config_parameter_name}"
 
 echo "Starting deployment-notes backend bootstrap"
 echo "Environment: $${ENVIRONMENT}"
@@ -117,7 +117,7 @@ docker run -d \
   --log-opt max-buffer-size=4m \
   -e DEPLOYMENT_NOTES_ENV="$${ENVIRONMENT}" \
   -e DEPLOYMENT_NOTES_SERVE_FRONTEND=false \
-  -e DEPLOYMENT_NOTES_DATABASE_URL_SSM_PARAM="$${SSM_DATABASE_URL_PARAM}" \
+  -e DEPLOYMENT_NOTES_DATABASE_CONFIG_SSM_PARAM="$${SSM_DATABASE_CONFIG_PARAM}" \
   -e DEPLOYMENT_NOTES_LOG_LEVEL="$${DEPLOYMENT_NOTES_LOG_LEVEL}" \
   -e AWS_REGION="$${AWS_REGION}" \
   -e AWS_DEFAULT_REGION="$${AWS_REGION}" \

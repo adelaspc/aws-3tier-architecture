@@ -1,5 +1,5 @@
 {
-  "project": "project-name",
+  "project": "aws-3tier",
   "region": "us-east-1",
   "environment": "dev",
   "vpc_cidr": "10.0.0.0/16",
@@ -25,9 +25,9 @@
   ],
   "public_zone_name": "example.com",
   "public_record_name": "www",
-  "cloudflare_zone_id": "zone-id",
+  "cloudflare_zone_id": "00000000000000000000000000000000",
   "cloudflare_proxied": false,
-  "custom_ami_id": "ami-id",
+  "custom_ami_id": "ami-0123456789abcdef0",
   "ecr_repository_name": "deployments-notes-app",
   "initial_backend_image_tag": "1.0.0",
   "initial_frontend_image_tag": "1.0.0",
@@ -40,5 +40,21 @@
   "backend_gunicorn_threads": 4,
   "container_health_check_attempts": 10,
   "container_health_check_interval_seconds": 3,
-  "acm_certificate_arn": "arn:aws:acm:<aws-region>:<account-id>:certificate/12345..."
+  "db_engine_version": "8.0",
+  "db_instance_class": "db.t3.micro",
+  "db_allocated_storage": 20,
+  "db_max_allocated_storage": 100,
+  "db_storage_type": "gp3",
+  "database_name": "deployment_notes",
+  "db_master_username": "rhaast",
+  "db_multi_az": true,
+  "db_backup_retention_period": 7,
+  "db_deletion_protection": false,
+  "db_skip_final_snapshot": true,
+  "db_final_snapshot_identifier": null,
+  "db_apply_immediately": true,
+  "acm_certificate_arn": "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000",
+  "alb_access_logs": {
+    "enabled": false
+  }
 }

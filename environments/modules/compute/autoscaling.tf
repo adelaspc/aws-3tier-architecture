@@ -80,7 +80,7 @@ resource "aws_launch_template" "app" {
     cloudwatch_bootstrap_log_group = local.log_group_names.app.bootstrap
     cloudwatch_log_retention_days  = var.cloudwatch_log_retention_days
     container_name                 = var.backend_container_name
-    database_url_parameter_name    = local.database_url_parameter_name
+    database_config_parameter_name = aws_ssm_parameter.database_config.name
     environment                    = var.environment
     ecr_repository                 = var.ecr_repository_name
     gunicorn_threads               = var.backend_gunicorn_threads

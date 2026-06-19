@@ -49,7 +49,7 @@ locals {
       local.image_tag_parameter_names.web,
     ]
     app = [
-      local.database_url_parameter_name,
+      local.database_config_parameter_name,
       local.cloudwatch_agent_parameter_names.app,
       local.image_tag_parameter_names.app,
     ]
@@ -95,6 +95,16 @@ data "aws_iam_policy_document" "runtime" {
     sid       = "DescribeLogGroups"
     actions   = ["logs:DescribeLogGroups"]
     resources = ["*"]
+  }
+
+  dynamic "statement" {
+    for_each = each.key == "app" ? [1] : []
+
+    content {
+      sid       = "ReadRDSManagedPassword"
+      actions   = ["secretsmanager:GetSecretValue"]
+      resources = [var.database_secret_arn]
+    }
   }
 }
 

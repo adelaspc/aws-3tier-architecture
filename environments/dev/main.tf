@@ -28,6 +28,7 @@ module "load_balancers" {
   environment             = var.environment
   certificate_domain_name = var.public_zone_name
   acm_certificate_arn     = var.acm_certificate_arn
+  alb_access_logs         = var.alb_access_logs
   vpc_id                  = module.vpc.vpc_id
   public_subnet_ids       = module.vpc.public_subnet_ids
   app_subnet_ids          = module.vpc.app_subnet_ids
@@ -46,6 +47,11 @@ module "compute" {
   app_security_group_id                   = module.security_groups.app_ec2_sg_id
   web_target_group_arn                    = module.load_balancers.public_web_target_group_arn
   app_target_group_arn                    = module.load_balancers.internal_app_target_group_arn
+  database_host                           = module.rds.endpoint
+  database_port                           = module.rds.port
+  database_name                           = var.database_name
+  database_username                       = module.rds.master_username
+  database_secret_arn                     = module.rds.master_user_secret_arn
   internal_alb_dns_name                   = module.dns.private_fqdn
   custom_ami_id                           = var.custom_ami_id
   ecr_repository_name                     = var.ecr_repository_name
@@ -68,13 +74,23 @@ module "compute" {
 module "rds" {
   source = "../modules/rds"
 
-  project              = var.project
-  environment          = var.environment
-  db_subnet_group_name = module.vpc.db_subnet_group_name
-  security_group_id    = module.security_groups.db_sg_id
-  instance_class       = var.db_instance_class
-  database_name        = var.database_name
-  deletion_protection  = var.db_deletion_protection
+  project                   = var.project
+  environment               = var.environment
+  db_subnet_group_name      = module.vpc.db_subnet_group_name
+  security_group_id         = module.security_groups.db_sg_id
+  engine_version            = var.db_engine_version
+  instance_class            = var.db_instance_class
+  allocated_storage         = var.db_allocated_storage
+  max_allocated_storage     = var.db_max_allocated_storage
+  storage_type              = var.db_storage_type
+  database_name             = var.database_name
+  master_username           = var.db_master_username
+  multi_az                  = var.db_multi_az
+  backup_retention_period   = var.db_backup_retention_period
+  deletion_protection       = var.db_deletion_protection
+  skip_final_snapshot       = var.db_skip_final_snapshot
+  final_snapshot_identifier = var.db_final_snapshot_identifier
+  apply_immediately         = var.db_apply_immediately
 }
 
 module "dns" {
@@ -82,6 +98,7 @@ module "dns" {
 
   vpc_id                = module.vpc.vpc_id
   cloudflare_zone_id    = var.cloudflare_zone_id
+  public_zone_name      = var.public_zone_name
   public_record_name    = var.public_record_name
   public_alb_dns_name   = module.load_balancers.public_alb_dns_name
   cloudflare_proxied    = var.cloudflare_proxied
