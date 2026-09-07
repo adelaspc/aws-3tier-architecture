@@ -70,6 +70,14 @@ Trade-off:
 - AWS-managed keys: less Terraform and IAM complexity, no custom key rotation policy to operate.
 - Customer-managed keys: stronger control and audit boundaries for production, but require explicit key policies, rotation decisions, and additional runtime `kms:Decrypt` permissions.
 
+## Runtime Secrets and Configuration Flow
+
+Terraform publishes non-secret database connection metadata to SSM Parameter Store. The RDS password remains in the AWS-managed RDS master user secret, and the backend application reads both values at runtime using the app EC2 instance role.
+
+![Runtime secrets and configuration flow](assets/runtime-configuration-flow.png)
+
+This keeps the full database URL out of Terraform variables, GitHub Actions secrets, EC2 user data, and SSM Parameter Store. The trade-off is that runtime IAM permissions must allow the app tier to read the specific SSM parameters and the RDS master user secret.
+
 ## Checkov Exceptions
 
 Some Checkov findings are intentionally skipped inline in Terraform. These skips should be read as documented demo trade-offs, not production recommendations.

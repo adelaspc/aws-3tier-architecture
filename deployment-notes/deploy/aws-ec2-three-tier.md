@@ -33,7 +33,9 @@ App tier:
 ```dotenv
 DEPLOYMENT_NOTES_ENV=production
 DEPLOYMENT_NOTES_SERVE_FRONTEND=false
-DEPLOYMENT_NOTES_DATABASE_URL=mysql+pymysql://deployment_notes_user:REPLACE_WITH_SECRET_PASSWORD@REPLACE_WITH_RDS_ENDPOINT:3306/deployment_notes
+DEPLOYMENT_NOTES_DATABASE_CONFIG_SSM_PARAM=/<environment>/deployment-app/db/config
+AWS_REGION=eu-central-1
+AWS_DEFAULT_REGION=eu-central-1
 FLASK_APP=wsgi.py
 PORT=5000
 GUNICORN_WORKERS=2
@@ -46,7 +48,7 @@ Web tier:
 APP_INTERNAL_ALB_DNS=internal-deployment-notes-app-123456789.us-east-1.elb.amazonaws.com
 ```
 
-Use Secrets Manager, SSM Parameter Store, EC2 user data, CodeDeploy environment files, or your CI/CD secret store for real values. Do not commit production secrets.
+For the Terraform-managed AWS deployment, SSM contains non-secret database metadata and the RDS master secret ARN; the app EC2 role reads the password from Secrets Manager at runtime. For manually managed deployments, a direct `DEPLOYMENT_NOTES_DATABASE_URL` can be used instead. Do not commit production secrets.
 
 ## Build Commands
 
@@ -72,9 +74,13 @@ Backend EC2 container example:
 docker run --rm -p 5000:5000 \
   -e DEPLOYMENT_NOTES_ENV=production \
   -e DEPLOYMENT_NOTES_SERVE_FRONTEND=false \
-  -e DEPLOYMENT_NOTES_DATABASE_URL='mysql+pymysql://deployment_notes_user:REPLACE_WITH_SECRET_PASSWORD@REPLACE_WITH_RDS_ENDPOINT:3306/deployment_notes' \
+  -e DEPLOYMENT_NOTES_DATABASE_CONFIG_SSM_PARAM=/dev/deployment-app/db/config \
+  -e AWS_REGION=eu-central-1 \
+  -e AWS_DEFAULT_REGION=eu-central-1 \
   deployment-notes-backend:latest
 ```
+
+Replace `/dev` with the SSM prefix of the environment being deployed. The Terraform demo uses `/dev/deployment-app` by default.
 
 Frontend EC2 container example:
 
@@ -124,7 +130,7 @@ Do not allow direct internet ingress to web EC2, app EC2, or RDS. Admin access s
 - Use private DB subnets only.
 - Enable backups and deletion protection for non-demo environments.
 - Store the database password outside the repo.
-- Use `DEPLOYMENT_NOTES_DATABASE_URL=mysql+pymysql://...` on the app tier.
+- For Terraform-managed AWS, use `DEPLOYMENT_NOTES_DATABASE_CONFIG_SSM_PARAM` and the EC2 role permissions described above. Use `DEPLOYMENT_NOTES_DATABASE_URL=mysql+pymysql://...` only for a manually managed alternative.
 
 ## Migration Workflow
 

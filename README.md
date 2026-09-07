@@ -8,7 +8,11 @@
 
 This repository provisions an AWS three-tier application environment with Terraform. It is designed as an ephemeral portfolio/demo stack: create the infrastructure, verify the architecture and deployment workflow, then destroy it to avoid ongoing AWS costs.
 
-The sample workload is the `deployment-notes` application, a small Flask/Vue deployment tracking app deployed through EC2 Auto Scaling Groups, Application Load Balancers, Amazon RDS, ECR, SSM Parameter Store, and GitHub Actions.
+## Usage and Licensing
+
+This repository is publicly visible for portfolio and evaluation purposes only. No license is granted to use, copy, modify, or distribute its contents. All rights are reserved by the copyright holder.
+
+The sample workload is the `deployment-notes` application, a small Flask/Vue deployment tracking app deployed through EC2 Auto Scaling Groups, Application Load Balancers, Amazon RDS, ECR, SSM Parameter Store, and GitHub Actions. It is intentionally a simple demo application used to exercise the infrastructure and deployment workflow, not a production-ready product or a demonstration of application security design.
 
 ![Architecture diagram](Architecture.png)
 
@@ -23,6 +27,8 @@ The sample workload is the `deployment-notes` application, a small Flask/Vue dep
 - GitHub Actions OIDC roles for Terraform plan/apply and application deployment.
 - Application releases through ECR images, SSM image tag parameters, database migrations, and ASG Instance Refresh.
 - Explicit documentation of cost, security, and production-readiness trade-offs.
+
+The application itself is documented separately in [deployment-notes/README.md](deployment-notes/README.md), including its intentionally limited demo scope.
 
 ## Quality Gates
 
@@ -111,17 +117,32 @@ For application releases, the workflow updates backend/frontend image tag parame
 
 See [docs/demo-walkthrough.md](docs/demo-walkthrough.md) for an end-to-end reviewer flow and [docs/operations.md](docs/operations.md) for operational commands.
 
-## Estimated Costs
+## Estimated Demo Cost
 
-This stack can generate meaningful AWS charges while running. Exact cost depends on region, runtime duration, traffic, and retained logs. The main recurring cost drivers are:
+The infrastructure was cost-estimated using CloudCraft for the `eu-central-1` region. The estimate is intended as an approximate always-on development-environment cost, not a production billing guarantee.
 
-- NAT gateways.
-- RDS MySQL, especially Multi-AZ.
-- Public and internal ALBs.
-- EC2 instances in both web and app ASGs.
-- CloudWatch Logs ingestion and retention.
+![CloudCraft budget estimate](docs/assets/budget.png)
 
-The intended demo lifecycle is short: provision, verify, then destroy.
+| Category | Resource | Count | Approx monthly cost |
+|---|---|---:|---:|
+| Compute | EC2 `t3.micro` Linux | 4 | $35.04 |
+| Containers | ECR repository | 1 | $0.10 |
+| Networking | Application Load Balancers | 2 | $51.10 |
+| Networking | NAT Gateways | 2 | $76.96 |
+| Database | RDS MySQL `db.t3.micro` Multi-AZ | 1 | $29.20 |
+| **Total** |  |  | **$192.40/mo** |
+
+Actual costs may vary based on traffic, data transfer, storage growth, logs, backups, enabled observability features, and regional pricing changes. The intended demo lifecycle is short: provision, verify, then destroy.
+
+### Cost Optimization Options
+
+For short-lived demos or lower-cost development environments:
+
+- Use a single NAT Gateway, accepting reduced Availability Zone independence.
+- Replace some NAT-dependent AWS service traffic with VPC endpoints for SSM, ECR, CloudWatch Logs, and S3.
+- Disable RDS Multi-AZ for short-lived development environments.
+- Scale web and app ASG desired capacity down to one instance per tier when high availability is not being tested.
+- Destroy the environment when it is not actively being reviewed or tested.
 
 ## Cost-Conscious Choices
 
@@ -145,7 +166,7 @@ These defaults are intentional for a portfolio demo and are not production recom
 | Observability | Some optional logging and RDS Performance Insights are omitted by default. | Enable the appropriate logging, metrics, retention, alarms, and database observability profile. |
 | Cost control | ALB access logs and VPC Flow Logs are disabled by default. | Enable audit logs with retention, lifecycle, and review processes. |
 
-More detail: [docs/security-and-tradeoffs.md](docs/security-and-tradeoffs.md) and [docs/decisions.md](docs/decisions.md).
+More detail: [docs/security-and-tradeoffs.md](docs/security-and-tradeoffs.md), including the runtime secrets and configuration flow, and [docs/decisions.md](docs/decisions.md).
 
 ## Higher-Availability Choices That Increase Cost
 
@@ -175,6 +196,7 @@ These choices make the architecture more realistic, but they increase the cost o
 
 ## Documentation
 
+- [Security policy](SECURITY.md)
 - [Architecture](docs/architecture.md)
 - [Infrastructure](docs/infrastructure.md)
 - [Bootstrap](docs/bootstrap.md)

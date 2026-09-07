@@ -29,7 +29,6 @@ Terraform-managed resources use a consistent common tag set where supported:
 - `Project`
 - `Environment`
 - `ManagedBy = terraform`
-- `Owner = Adela`
 
 Some resources add extra purpose or tier tags, such as `Name`, `Tier`, or `Purpose`. Consistent tags make AWS console filtering, cost review, and tools such as CloudCraft easier to use when the infrastructure is running.
 
