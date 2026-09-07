@@ -38,7 +38,7 @@ Composes the reusable Terraform modules into the demo dev environment.
 | <a name="input_db_engine_version"></a> [db\_engine\_version](#input\_db\_engine\_version) | MySQL engine version for the RDS instance. | `string` | `"8.0"` | no |
 | <a name="input_db_final_snapshot_identifier"></a> [db\_final\_snapshot\_identifier](#input\_db\_final\_snapshot\_identifier) | Optional final snapshot identifier used when db\_skip\_final\_snapshot is false. | `string` | `null` | no |
 | <a name="input_db_instance_class"></a> [db\_instance\_class](#input\_db\_instance\_class) | RDS instance class. | `string` | `"db.t3.micro"` | no |
-| <a name="input_db_master_username"></a> [db\_master\_username](#input\_db\_master\_username) | Master username for the RDS instance. | `string` | `"rhaast"` | no |
+| <a name="input_db_master_username"></a> [db\_master\_username](#input\_db\_master\_username) | Master username for the RDS instance. | `string` | `"deployment_admin"` | no |
 | <a name="input_db_max_allocated_storage"></a> [db\_max\_allocated\_storage](#input\_db\_max\_allocated\_storage) | Upper storage autoscaling limit in GiB for the RDS instance. | `number` | `100` | no |
 | <a name="input_db_multi_az"></a> [db\_multi\_az](#input\_db\_multi\_az) | Whether to enable Multi-AZ deployment for RDS. | `bool` | `true` | no |
 | <a name="input_db_skip_final_snapshot"></a> [db\_skip\_final\_snapshot](#input\_db\_skip\_final\_snapshot) | Whether to skip a final snapshot when destroying the RDS instance. | `bool` | `true` | no |

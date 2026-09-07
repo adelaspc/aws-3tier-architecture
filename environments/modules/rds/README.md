@@ -37,7 +37,7 @@ Creates the private RDS MySQL instance used by the application tier.
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name used for resource names and tags. | `string` | n/a | yes |
 | <a name="input_final_snapshot_identifier"></a> [final\_snapshot\_identifier](#input\_final\_snapshot\_identifier) | Optional final snapshot identifier used when skip\_final\_snapshot is false. | `string` | `null` | no |
 | <a name="input_instance_class"></a> [instance\_class](#input\_instance\_class) | RDS instance class. | `string` | `"db.t3.micro"` | no |
-| <a name="input_master_username"></a> [master\_username](#input\_master\_username) | Master username for the RDS instance. | `string` | `"rhaast"` | no |
+| <a name="input_master_username"></a> [master\_username](#input\_master\_username) | Master username for the RDS instance. | `string` | `"deployment_admin"` | no |
 | <a name="input_max_allocated_storage"></a> [max\_allocated\_storage](#input\_max\_allocated\_storage) | Upper storage autoscaling limit in GiB for the RDS instance. | `number` | `100` | no |
 | <a name="input_multi_az"></a> [multi\_az](#input\_multi\_az) | Whether to enable Multi-AZ deployment for RDS. | `bool` | `true` | no |
 | <a name="input_project"></a> [project](#input\_project) | Project name used for resource names and tags. | `string` | n/a | yes |
