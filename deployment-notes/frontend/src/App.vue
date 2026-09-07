@@ -39,6 +39,8 @@ const webStatusTone = computed(() => mapHealthTone(webHealth.value));
 const webStatusLabel = computed(() => formatHealthLabel(webHealth.value));
 
 async function readResponsePayload(response) {
+  // API errors are normally JSON, but keeping the raw body makes proxy and
+  // upstream errors easier to understand from the UI.
   const text = await response.text();
   if (!text) {
     return null;
@@ -55,6 +57,7 @@ async function fetchHealth() {
   isRefreshingHealth.value = true;
 
   try {
+    // /health checks Nginx itself; /app-health passes through to the app tier.
     const [webStatus, serviceStatus] = await Promise.all([
       probeHealthEndpoint("/health"),
       probeHealthEndpoint("/app-health"),
@@ -155,6 +158,7 @@ async function createDeployment() {
       environment: "staging",
       status: "pending",
     };
+    // Reload from the API so sorting and pagination stay server-authoritative.
     fetchDeployments();
   } catch (error) {
     errorMessage.value = error.message;

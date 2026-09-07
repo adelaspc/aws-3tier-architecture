@@ -22,6 +22,8 @@ def create_app(config_class=Config):
 
     register_blueprints(app)
 
+    # In AWS, Nginx owns the frontend and proxies API traffic to this service.
+    # Serving the SPA here is only a convenience for local development.
     if not app.config.get("SERVE_FRONTEND"):
         return app
 
@@ -34,6 +36,7 @@ def create_app(config_class=Config):
             return send_from_directory(dist_dir, path)
 
         if dist_dir.is_dir():
+            # Unknown paths fall back to index.html so client-side routes work.
             return send_from_directory(dist_dir, "index.html")
 
         return {"error": "Frontend build not available"}, 404

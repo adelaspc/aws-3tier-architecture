@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 5173,
+    // Match the production same-origin paths while developing against Flask.
     proxy: {
       "/api": {
         target: "http://127.0.0.1:5000",
@@ -17,6 +18,7 @@ export default defineConfig({
       "/app-health": {
         target: "http://127.0.0.1:5000",
         changeOrigin: true,
+        // Production Nginx performs the same app-tier health pass-through.
         rewrite: () => "/health",
       },
     },

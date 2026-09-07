@@ -35,6 +35,8 @@ LOG_RECORD_RESERVED_FIELDS = {
 
 class JsonLogFormatter(logging.Formatter):
     def format(self, record):
+        # One JSON object per line works well with the Docker awslogs driver and
+        # keeps useful request context searchable in CloudWatch Logs.
         payload = {
             "timestamp": datetime.fromtimestamp(record.created, timezone.utc).isoformat(),
             "level": record.levelname,
@@ -82,6 +84,8 @@ def configure_json_logging(app):
     stderr_handler.setFormatter(formatter)
     stderr_handler.setLevel(logging.ERROR)
 
+    # Send normal application events to stdout and errors to stderr without
+    # duplicating error records across both streams.
     app.logger.handlers.clear()
     app.logger.addHandler(stdout_handler)
     app.logger.addHandler(stderr_handler)
