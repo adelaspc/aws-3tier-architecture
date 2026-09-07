@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read Terraform version
         id: terraform-version
@@ -70,7 +70,7 @@ jobs:
         run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
       - name: Cache Terraform providers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.TF_PLUGIN_CACHE_DIR }}
           key: terraform-providers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environments/**/.terraform.lock.hcl') }}
@@ -118,7 +118,7 @@ jobs:
         run: tflint --recursive --format compact --config "$GITHUB_WORKSPACE/.tflint.hcl"
 
       - name: Run Checkov
-        uses: bridgecrewio/checkov-action@5659ddea96102e16d8f221b3d8402453c0b1c150 # v12
+        uses: bridgecrewio/checkov-action@f967808197a8d784d3e72919f38c3ff0cda7884e # v12
         with:
           directory: environments
           framework: terraform
@@ -143,7 +143,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read Terraform version
         id: terraform-version
@@ -159,7 +159,7 @@ jobs:
         run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
       - name: Cache Terraform providers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.TF_PLUGIN_CACHE_DIR }}
           key: terraform-providers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environments/**/.terraform.lock.hcl') }}
@@ -197,7 +197,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read Terraform version
         id: terraform-version
@@ -229,7 +229,7 @@ jobs:
         run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
       - name: Cache Terraform providers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.TF_PLUGIN_CACHE_DIR }}
           key: terraform-providers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environments/**/.terraform.lock.hcl') }}
@@ -292,7 +292,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload plan output
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: terraform-dev-plan-${{ github.run_id }}
           path: environments/dev/terraform-plan.txt
@@ -323,7 +323,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read Terraform version
         id: terraform-version
@@ -355,7 +355,7 @@ jobs:
         run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
       - name: Cache Terraform providers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.TF_PLUGIN_CACHE_DIR }}
           key: terraform-providers-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environments/**/.terraform.lock.hcl') }}
@@ -418,7 +418,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload apply plan output
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: terraform-dev-apply-plan-${{ github.run_id }}
           path: environments/dev/terraform-plan.txt
