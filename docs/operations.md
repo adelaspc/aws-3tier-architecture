@@ -191,7 +191,7 @@ aws autoscaling describe-instance-refreshes \
 
 The app deployment workflow is the normal release path for application changes. It:
 
-1. Runs backend and frontend tests.
+1. Runs backend tests with `pytest` and verifies the frontend with `npm run build`.
 2. Builds backend and frontend images.
 3. Pushes the images to the prerequisite ECR repository.
 4. Runs database migrations through SSM on one healthy app instance.

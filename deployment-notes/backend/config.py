@@ -22,6 +22,8 @@ def should_serve_frontend():
     if configured_value is not None:
         return truthy_env(configured_value)
 
+    # Local runs can serve the built frontend from Flask. AWS keeps the web and
+    # API tiers separate, so the backend container does not serve static files.
     return current_environment() in {"local", "development", "test"}
 
 
@@ -51,6 +53,8 @@ def build_mysql_url(username, password, host, port, database):
 
 
 def resolve_database_url_from_config_parameter(parameter_name):
+    # Terraform publishes connection metadata to SSM, while RDS keeps the
+    # password in its managed secret. This keeps the password out of Terraform.
     config = json.loads(get_ssm_parameter(parameter_name))
     secret = json.loads(get_secret_value(config["secret_arn"]))
 
@@ -67,6 +71,8 @@ def resolve_database_url_from_config_parameter(parameter_name):
 
 
 def resolve_database_url(instance_path=None):
+    # Keep this order predictable: a direct URL is useful for local overrides,
+    # while the deployed app normally uses SSM metadata and Secrets Manager.
     database_url = os.getenv("DEPLOYMENT_NOTES_DATABASE_URL")
     if database_url:
         return database_url
@@ -81,6 +87,7 @@ def resolve_database_url(instance_path=None):
 
     app_env = current_environment()
     if app_env in {"local", "development", "test"}:
+        # SQLite keeps a basic local run self-contained when MySQL is not needed.
         database_path = Path(instance_path or "instance") / "deployment_notes.db"
         return f"sqlite:///{database_path.resolve()}"
 

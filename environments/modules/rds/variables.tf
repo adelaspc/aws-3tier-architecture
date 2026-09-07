@@ -98,7 +98,7 @@ variable "database_name" {
 variable "master_username" {
   description = "Master username for the RDS instance."
   type        = string
-  default     = "rhaast"
+  default     = "deployment_admin"
 
   validation {
     condition     = can(regex("^[A-Za-z][A-Za-z0-9_]{0,15}$", var.master_username)) && !contains(["admin", "root"], lower(var.master_username))

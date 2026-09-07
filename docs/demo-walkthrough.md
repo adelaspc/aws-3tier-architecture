@@ -99,6 +99,10 @@ curl https://<public-application-url>/health
 curl https://<public-application-url>/app-health
 ```
 
+The deployed demo workload is documented in [deployment-notes/README.md](../deployment-notes/README.md). It is intentionally a simple application used to validate the infrastructure and deployment pipeline, not a production-ready application.
+
+![Deployment Notes deployed app](assets/deployment-notes-app.png)
+
 ## 8. Verify AWS Resources
 
 Recommended checks:

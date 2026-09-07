@@ -5,6 +5,5 @@ locals {
     Project     = var.project
     Environment = var.environment
     ManagedBy   = "terraform"
-    Owner       = "Adela"
   }
 }

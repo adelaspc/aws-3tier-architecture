@@ -17,6 +17,7 @@ COPY --chown=appuser:appuser wsgi.py ./
 
 RUN mkdir -p /app/instance && chown -R appuser:appuser /app
 
+# The application does not need root privileges at runtime.
 USER appuser
 
 EXPOSE 5000

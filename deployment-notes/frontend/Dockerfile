@@ -5,6 +5,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY frontend/ ./
 RUN npm run build
 
+# The final image only needs Nginx and the compiled static files, not Node.js.
 FROM nginx:1.27-alpine
 COPY deploy/nginx/templates/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html

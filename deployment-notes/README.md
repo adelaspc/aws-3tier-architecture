@@ -4,6 +4,22 @@ Deployment Notes is a small full-stack deployment tracking application. It lets 
 
 The project is intentionally scoped as an independent sample workload. In the larger autodeploy platform it can represent a real user-owned repository that a platform would clone, build, and deploy. It does not import the platform control plane, worker process, or platform models, so it can also be reviewed and run as a standalone portfolio project.
 
+![Deployment Notes deployed app](../docs/assets/deployment-notes-app.png)
+
+## Demo Scope
+
+This application exists to exercise the AWS infrastructure and CI/CD workflow in the parent Terraform repository. It is intentionally simple and is not production-ready application software.
+
+Intentional limitations:
+
+- No user authentication or authorization.
+- No hardened public API security model.
+- No multi-tenant data isolation.
+- No rate limiting or abuse protection.
+- Minimal UI focused on smoke testing the deployed stack.
+
+The goal is to demonstrate DevOps and infrastructure engineering skills: container builds, ECR publishing, SSM-based deployment configuration, database migrations, Auto Scaling Group refreshes, ALB routing, RDS connectivity, and operational health checks.
+
 ## What the App Does
 
 - Creates deployment records with an application name, version, target environment, and initial status.
@@ -13,7 +29,7 @@ The project is intentionally scoped as an independent sample workload. In the la
 - Updates deployment status through explicit lifecycle transition rules.
 - Deletes deployment records.
 - Exposes health checks for the Flask service and database connection.
-- Serves the compiled Vue frontend from the Flask application in production.
+- Serves the compiled Vue frontend from Flask in local/combined mode; AWS uses a separate Nginx frontend tier and keeps Flask API-only.
 - Supports local SQLite development and containerized MySQL deployment.
 
 ## Feature Walkthrough
@@ -83,9 +99,12 @@ This prevents recording the same release of the same application into the same e
 
 ### Health Monitoring
 
-The frontend displays lightweight service health by calling `GET /health`. In local development this reaches Flask through the Vite proxy; in AWS this reaches the web-tier Nginx health endpoint.
+The frontend displays two lightweight health signals:
 
-The backend also exposes `GET /health/db` for operator diagnostics. That endpoint runs a lightweight `SELECT 1` query and returns `503 Service Unavailable` if the database is unreachable, but it is not used by the normal browser dashboard.
+- `GET /health`: checks the web tier. Locally it reaches Flask through the Vite proxy; in AWS it is served directly by web-tier Nginx.
+- `GET /app-health`: checks the app tier. Locally it reaches the Flask alias through the Vite proxy; in AWS Nginx proxies it to the internal ALB and Flask.
+
+The backend also exposes `GET /health/db` for operator diagnostics. That endpoint runs a lightweight `SELECT 1` query and returns `503 Service Unavailable` if the database is unreachable, but it is not used by the normal browser dashboard. Failure responses are intentionally generic; database details remain in application logs.
 
 ## Tech Stack
 
@@ -189,7 +208,7 @@ Failure response:
 {
   "status": "error",
   "database": "unreachable",
-  "details": "database error details"
+  "message": "database check failed"
 }
 ```
 
@@ -490,13 +509,17 @@ Browser -> Public ALB -> Web EC2/Nginx/Vue -> Internal ALB -> App EC2/Gunicorn/F
 
 The public ALB should send traffic only to the web tier. The web-tier Nginx config serves static Vue files, exposes an independent `/health`, and proxies `/api/` to the internal app ALB through `APP_INTERNAL_ALB_DNS`.
 
-Production app-tier instances should set:
+AWS app-tier instances use the SSM + Secrets Manager configuration created by Terraform. For the current `dev` environment, the values are:
 
 ```dotenv
-DEPLOYMENT_NOTES_ENV=production
+DEPLOYMENT_NOTES_ENV=dev
 DEPLOYMENT_NOTES_SERVE_FRONTEND=false
-DEPLOYMENT_NOTES_DATABASE_URL=mysql+pymysql://deployment_notes_user:REPLACE_WITH_SECRET_PASSWORD@REPLACE_WITH_RDS_ENDPOINT:3306/deployment_notes
+DEPLOYMENT_NOTES_DATABASE_CONFIG_SSM_PARAM=/dev/deployment-app/db/config
+AWS_REGION=eu-central-1
+AWS_DEFAULT_REGION=eu-central-1
 ```
+
+The SSM parameter contains non-secret database metadata and the ARN of the AWS-managed RDS master secret. The backend reads the password from Secrets Manager at runtime and builds the SQLAlchemy URL inside the container. A direct `DEPLOYMENT_NOTES_DATABASE_URL` remains supported for local or manually managed deployments, but it is not the Terraform-managed AWS path.
 
 Run migrations once per release, not on every instance boot:
 

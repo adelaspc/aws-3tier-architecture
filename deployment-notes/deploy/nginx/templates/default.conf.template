@@ -31,6 +31,7 @@ server {
     }
 
     location /api/ {
+        # The hostname is injected at container start and points to the private ALB.
         proxy_pass http://${APP_INTERNAL_ALB_DNS};
         proxy_http_version 1.1;
         proxy_set_header Host $host;

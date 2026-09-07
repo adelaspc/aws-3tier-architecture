@@ -2,6 +2,8 @@
 
 The repository uses GitHub Actions for both infrastructure validation and application deployment.
 
+![CI/CD flow](assets/aws-3tier-ci-cd.png)
+
 ## Terraform Workflow
 
 The Terraform workflow validates infrastructure changes before apply:

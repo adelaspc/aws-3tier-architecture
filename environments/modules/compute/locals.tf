@@ -5,7 +5,6 @@ locals {
     Project     = var.project
     Environment = var.environment
     ManagedBy   = "terraform"
-    Owner       = "Adela"
   }
 
   deployment_app_prefix       = coalesce(var.deployment_app_ssm_prefix, "/${var.environment}/deployment-app")

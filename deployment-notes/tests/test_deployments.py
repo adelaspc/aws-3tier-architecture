@@ -112,6 +112,17 @@ def test_create_deployment_rejects_invalid_status(client):
     assert "Invalid status" in response.get_json()["error"]
 
 
+def test_create_deployment_rejects_non_object_json(client):
+    response = client.post(
+        "/api/deployments",
+        data="1",
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.get_json() == {"error": "Request body must be a JSON object"}
+
+
 def test_patch_deployment_status(client):
     create_response = client.post(
         "/api/deployments",

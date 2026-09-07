@@ -16,6 +16,8 @@ def get_deployment_or_404(deployment_id):
 
 
 def validate_deployment_payload(payload, *, partial=False):
+    # PATCH requests only send changed fields, so required-field checks apply to
+    # creates but the value checks below still apply to partial updates.
     required_fields = ("application_name", "version", "environment", "status")
     missing_fields = [field for field in required_fields if not payload.get(field)]
     if missing_fields and not partial:
@@ -52,6 +54,7 @@ def list_deployments():
 
     page = max(request.args.get("page", default=1, type=int), 1)
     per_page = request.args.get("per_page", default=10, type=int)
+    # Cap page size so a single request cannot load the full deployment history.
     per_page = min(max(per_page, 1), 50)
 
     pagination = query.order_by(Deployment.created_at.desc()).paginate(
@@ -81,6 +84,9 @@ def get_deployment(deployment_id):
 @deployments_bp.post("")
 def create_deployment():
     payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Request body must be a JSON object"}), 400
+
     validation_error = validate_deployment_payload(payload)
     if validation_error:
         current_app.logger.warning(
@@ -157,6 +163,8 @@ def update_deployment(deployment_id):
         return jsonify({"error": validation_error}), 400
 
     next_status = update_data.get("status")
+    # Status changes follow the workflow defined on the model instead of
+    # allowing clients to jump directly between arbitrary states.
     if next_status and not deployment.can_transition_to(next_status):
         current_app.logger.warning(
             "Deployment status transition rejected",

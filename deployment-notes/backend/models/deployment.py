@@ -7,6 +7,8 @@ class Deployment(db.Model):
     __tablename__ = "deployments"
     VALID_ENVIRONMENTS = ("development", "staging", "production")
     VALID_STATUSES = ("pending", "building", "deployed", "failed")
+    # Terminal states have no outgoing transitions. Re-running a deployment is
+    # recorded as a new entry so the history stays easy to follow.
     STATUS_TRANSITIONS = {
         "pending": ("building", "failed"),
         "building": ("deployed", "failed"),

@@ -61,5 +61,5 @@ branches. Fork pull requests run quality checks but skip the AWS plan job. The
 apply role accepts only the `terraform-dev` environment subject.
 
 The bootstrap stack uses a state key separate from the dev application state.
-DynamoDB locking is retained for now; migration to S3 native lockfiles is a
-future improvement.
+The Terraform backend uses S3 native lockfiles through `use_lockfile = true`,
+so state operations are protected without a separate DynamoDB locking table.

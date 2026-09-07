@@ -27,6 +27,10 @@ The VPC is split into four subnet groups across multiple Availability Zones:
 
 The database route table does not include a NAT route. Web and app private subnets use NAT gateways for outbound access to AWS APIs, ECR, SSM, CloudWatch, and package/image downloads.
 
+The following network view shows the intended subnet tiers, traffic direction, and security group boundaries. It is a documentation aid and should be read alongside the Terraform variables for the exact region, Availability Zones, and CIDR values used in a deployment.
+
+![Network and subnet layout](assets/network-and-subnet-layout.png)
+
 ## Tier Boundaries
 
 Security groups enforce tier-to-tier access:
