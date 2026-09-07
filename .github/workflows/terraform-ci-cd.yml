@@ -177,9 +177,8 @@ jobs:
   plan:
     name: Plan dev
     if: >-
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name == 'workflow_dispatch' && inputs.operation == 'plan')
+      github.event_name == 'workflow_dispatch' &&
+      inputs.operation == 'plan'
     needs:
       - quality
       - validate

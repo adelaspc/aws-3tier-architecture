@@ -1,9 +1,9 @@
 # Terraform CI/CD setup
 
-The workflow in `workflows/terraform-ci-cd.yml` validates all Terraform code,
-runs TFLint and Checkov, and creates plans for pull requests. Infrastructure
-changes are applied only through a manual `workflow_dispatch` run with the
-`apply` operation, after approval through the `terraform-dev` environment.
+The workflow in `workflows/terraform-ci-cd.yml` validates all Terraform code
+and runs TFLint and Checkov for pull requests. Terraform plans and applies run
+only through a manual `workflow_dispatch`. Infrastructure changes use the
+`apply` operation and require approval through the `terraform-dev` environment.
 Intentional Checkov exceptions are documented inline next to the affected
 Terraform resources; any other finding fails the workflow.
 
@@ -61,9 +61,11 @@ that restriction.
 
 Create the OIDC provider and both roles by applying
 `environments/github-actions-bootstrap` with a trusted local AWS identity. The
-plan role accepts internal pull requests and manual plans from repository
-branches. Fork pull requests run quality checks but skip the AWS plan job. The
-apply role accepts only the `terraform-dev` environment subject.
+plan role trust policy supports internal pull requests and manual plans from
+repository branches, but the current workflow starts plans only through manual
+dispatch. All pull requests run credential-free quality and validation jobs and
+skip the AWS plan job. The apply role accepts only the `terraform-dev`
+environment subject.
 
 The bootstrap stack uses a state key separate from the dev application state.
 The Terraform backend uses S3 native lockfiles through `use_lockfile = true`,
