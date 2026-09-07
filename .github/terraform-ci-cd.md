@@ -7,6 +7,11 @@ changes are applied only through a manual `workflow_dispatch` run with the
 Intentional Checkov exceptions are documented inline next to the affected
 Terraform resources; any other finding fails the workflow.
 
+Plan job summaries contain only the successful result and aggregate add,
+change, and destroy counts. Resource values remain out of the summary. The full
+text plan is retained as a workflow artifact for seven days and remains
+available to signed-in readers when the repository is public.
+
 ## Repository variables
 
 - `AWS_REGION`: AWS region used by the dev stack, for example `eu-central-1`.
