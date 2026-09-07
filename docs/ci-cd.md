@@ -18,6 +18,11 @@ The Terraform workflow validates infrastructure changes before apply:
 
 Terraform applies are intentionally manual and environment-gated.
 
+Terraform job summaries expose only the successful result and aggregate change
+counts. They do not include resource values or the full plan. The complete text
+plan is retained as a workflow artifact for seven days and can be downloaded by
+signed-in readers when the repository is public.
+
 Existing setup notes: [../.github/terraform-ci-cd.md](../.github/terraform-ci-cd.md)
 
 ## Application Workflow

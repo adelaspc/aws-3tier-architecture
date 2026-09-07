@@ -177,9 +177,8 @@ jobs:
   plan:
     name: Plan dev
     if: >-
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name == 'workflow_dispatch' && inputs.operation == 'plan')
+      github.event_name == 'workflow_dispatch' &&
+      inputs.operation == 'plan'
     needs:
       - quality
       - validate
@@ -280,15 +279,15 @@ jobs:
       - name: Add plan to job summary
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+          plan_summary="$(grep -E '^(Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy\.|No changes\. Your infrastructure matches the configuration\.)$' terraform-plan.txt | tail -n 1 || true)"
+          : "${plan_summary:=Plan completed; aggregate change counts were not available.}"
+
           {
             echo "## Terraform dev plan"
             echo
-            echo '```text'
-            sed -n '1,250p' terraform-plan.txt
-            if [ "$(wc -l < terraform-plan.txt)" -gt 250 ]; then
-              echo "... output truncated; download the artifact for the complete plan ..."
-            fi
-            echo '```'
+            echo "- Result: successful"
+            echo "- Summary: ${plan_summary}"
+            echo "- Detailed plan: retained as a workflow artifact for 7 days"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload plan output
@@ -406,15 +405,15 @@ jobs:
       - name: Add plan to job summary
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+          plan_summary="$(grep -E '^(Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy\.|No changes\. Your infrastructure matches the configuration\.)$' terraform-plan.txt | tail -n 1 || true)"
+          : "${plan_summary:=Plan completed; aggregate change counts were not available.}"
+
           {
             echo "## Terraform dev apply plan"
             echo
-            echo '```text'
-            sed -n '1,250p' terraform-plan.txt
-            if [ "$(wc -l < terraform-plan.txt)" -gt 250 ]; then
-              echo "... output truncated to the first 250 lines ..."
-            fi
-            echo '```'
+            echo "- Result: successful"
+            echo "- Summary: ${plan_summary}"
+            echo "- Detailed plan: retained as a workflow artifact for 7 days"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload apply plan output
