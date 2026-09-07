@@ -13,7 +13,7 @@ The Terraform workflow validates infrastructure changes before apply:
 - TFLint.
 - Checkov.
 - Terraform validation.
-- Pull request plan for trusted internal PRs.
+- Manual plan through `workflow_dispatch` when the AWS environment is available.
 - Manual apply from `main` through the `terraform-dev` GitHub Environment.
 
 Terraform applies are intentionally manual and environment-gated.
@@ -27,17 +27,22 @@ Existing setup notes: [../.github/terraform-ci-cd.md](../.github/terraform-ci-cd
 
 ## Application Workflow
 
-The application workflow:
+The application workflow runs credential-free CI for pull requests and pushes:
 
 1. Runs backend tests.
 2. Builds the frontend.
+
+When manually dispatched from `main`, and only when the AWS environment is
+available and configured, it continues with deployment:
+
 3. Builds backend and frontend Docker images.
 4. Pushes images to ECR.
 5. Runs database migrations through SSM on an app-tier instance.
 6. Updates SSM image tag parameters.
 7. Starts ASG Instance Refresh for the app and web tiers.
 
-The deployment role is assumed through GitHub OIDC and the `app-dev` GitHub Environment.
+The deployment role is assumed through GitHub OIDC and the `app-dev` GitHub
+Environment. Merges and ordinary pushes never attempt an AWS deployment.
 
 ## Required GitHub Configuration
 
