@@ -103,9 +103,10 @@ Keep the backend bootstrap stack separate from the dev stack so destroying the a
 
 The repository includes separate workflows for Terraform infrastructure and application deployments:
 
-- Terraform CI/CD validates formatting, runs Terraform tests, TFLint, Checkov, and creates plans.
+- Terraform CI/CD validates formatting and runs Terraform tests, TFLint, and Checkov; plans are manual.
 - Manual Terraform apply is gated through a GitHub Environment.
-- Application CI/CD tests the app, builds Docker images, pushes to ECR, runs migrations through SSM, updates SSM image tag parameters, and triggers ASG Instance Refresh.
+- Application CI tests the backend and builds the frontend on pull requests and pushes.
+- Manual application deployment builds Docker images, pushes to ECR, runs migrations through SSM, updates SSM image tag parameters, and triggers ASG Instance Refresh.
 
 See [docs/ci-cd.md](docs/ci-cd.md) and [environments/github-actions-bootstrap/README.md](environments/github-actions-bootstrap/README.md).
 
