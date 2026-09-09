@@ -273,8 +273,9 @@ jobs:
       - name: Create Terraform plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          terraform plan -no-color -input=false -lock-timeout=5m -out=tfplan
-          terraform show -no-color tfplan > terraform-plan.txt
+          # Keep the detailed plan out of public workflow logs. The binary plan
+          # remains local to this ephemeral runner and is not uploaded.
+          terraform plan -no-color -input=false -lock-timeout=5m -out=tfplan > terraform-plan.txt
 
       - name: Add plan to job summary
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -287,16 +288,8 @@ jobs:
             echo
             echo "- Result: successful"
             echo "- Summary: ${plan_summary}"
-            echo "- Detailed plan: retained as a workflow artifact for 7 days"
+            echo "- Detailed plan: intentionally not published or retained"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload plan output
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: terraform-dev-plan-${{ github.run_id }}
-          path: environments/dev/terraform-plan.txt
-          if-no-files-found: error
-          retention-days: 7
 
   apply:
     name: Apply dev
@@ -399,8 +392,9 @@ jobs:
       - name: Plan Terraform changes
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          terraform plan -no-color -input=false -lock-timeout=5m -out=tfplan
-          terraform show -no-color tfplan > terraform-plan.txt
+          # Keep the detailed plan out of public workflow logs. The binary plan
+          # remains local to this ephemeral runner and is not uploaded.
+          terraform plan -no-color -input=false -lock-timeout=5m -out=tfplan > terraform-plan.txt
 
       - name: Add plan to job summary
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -413,16 +407,8 @@ jobs:
             echo
             echo "- Result: successful"
             echo "- Summary: ${plan_summary}"
-            echo "- Detailed plan: retained as a workflow artifact for 7 days"
+            echo "- Detailed plan: intentionally not published or retained"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload apply plan output
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: terraform-dev-apply-plan-${{ github.run_id }}
-          path: environments/dev/terraform-plan.txt
-          if-no-files-found: error
-          retention-days: 7
 
       - name: Apply Terraform changes
         working-directory: ${{ env.TF_WORKING_DIR }}
