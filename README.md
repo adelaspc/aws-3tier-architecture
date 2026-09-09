@@ -10,7 +10,9 @@ This repository provisions an AWS three-tier application environment with Terraf
 
 ## Usage and Licensing
 
-This repository is publicly visible for portfolio and evaluation purposes only. No license is granted to use, copy, modify, or distribute its contents. All rights are reserved by the copyright holder.
+This repository is publicly visible solely for portfolio review and evaluation. It is not an open-source project.
+
+No license is granted to use, copy, modify, redistribute, or deploy its contents. Availability through GitHub does not grant any rights beyond those required to view or fork the repository through GitHub's own functionality. All other rights are reserved by the copyright holder.
 
 The sample workload is the `deployment-notes` application, a small Flask/Vue deployment tracking app deployed through EC2 Auto Scaling Groups, Application Load Balancers, Amazon RDS, ECR, SSM Parameter Store, and GitHub Actions. It is intentionally a simple demo application used to exercise the infrastructure and deployment workflow, not a production-ready product or a demonstration of application security design.
 
@@ -32,7 +34,7 @@ The application itself is documented separately in [deployment-notes/README.md](
 
 ## Quality Gates
 
-The badges at the top of this README show the latest GitHub Actions status for the Terraform and application pipelines. The Terraform workflow checks formatting, generated module documentation, module tests, validation, TFLint, Checkov, and pull request plans. The application workflow runs tests, builds images, pushes to ECR, runs migrations, and refreshes the EC2 Auto Scaling Groups.
+The badges at the top of this README show the latest GitHub Actions status for the Terraform and application pipelines. The Terraform workflow checks formatting, generated module documentation, module tests, validation, TFLint, and Checkov on pull requests and pushes; AWS-backed plans run only through a manual workflow dispatch. The application workflow runs tests, builds images, pushes to ECR, runs migrations, and refreshes the EC2 Auto Scaling Groups.
 
 For a local pre-flight check before opening a pull request:
 
@@ -226,11 +228,14 @@ These choices make the architecture more realistic, but they increase the cost o
 - The ECR repository is expected to exist before deployment and is not created by Terraform.
 - The public application requires an existing ACM certificate.
 - The app deployment workflow assumes GitHub variables and environments are configured after IAM bootstrap.
+- Failed application releases require manual recovery; the workflow does not automatically restore previous SSM image tags or refresh instances back to the previous release.
 - Some logging, backup, and retention controls are relaxed to keep teardown simple and cost low.
 
 ## Future Improvements
 
 - Terraform-managed CloudWatch agent SSM bootstrap.
+- Automatic application-release rollback that restores the previous backend/frontend image tags and refreshes both ASGs when a rollout fails.
+- A configurable ASG `health_check_grace_period`, sized for the instance bootstrap and container startup time.
 - Optional VPC endpoints for SSM, ECR, CloudWatch Logs, and S3.
 - Optional VPC Flow Logs.
 - Infracost estimate and cost examples by region.

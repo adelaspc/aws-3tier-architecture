@@ -19,9 +19,9 @@ The Terraform workflow validates infrastructure changes before apply:
 Terraform applies are intentionally manual and environment-gated.
 
 Terraform job summaries expose only the successful result and aggregate change
-counts. They do not include resource values or the full plan. The complete text
-plan is retained as a workflow artifact for seven days and can be downloaded by
-signed-in readers when the repository is public.
+counts. Detailed plans are redirected away from workflow logs, remain only on
+the ephemeral runner for the duration of the job, and are not uploaded as
+artifacts.
 
 Existing setup notes: [../.github/terraform-ci-cd.md](../.github/terraform-ci-cd.md)
 
@@ -40,6 +40,10 @@ available and configured, it continues with deployment:
 5. Runs database migrations through SSM on an app-tier instance.
 6. Updates SSM image tag parameters.
 7. Starts ASG Instance Refresh for the app and web tiers.
+
+Release recovery is currently manual. If either Instance Refresh fails, the
+workflow does not automatically restore the previous image tags or replace
+instances back to the previous release; follow [recovery.md](recovery.md).
 
 The deployment role is assumed through GitHub OIDC and the `app-dev` GitHub
 Environment. Merges and ordinary pushes never attempt an AWS deployment.

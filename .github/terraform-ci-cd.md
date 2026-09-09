@@ -8,9 +8,9 @@ Intentional Checkov exceptions are documented inline next to the affected
 Terraform resources; any other finding fails the workflow.
 
 Plan job summaries contain only the successful result and aggregate add,
-change, and destroy counts. Resource values remain out of the summary. The full
-text plan is retained as a workflow artifact for seven days and remains
-available to signed-in readers when the repository is public.
+change, and destroy counts. Detailed plans are redirected away from workflow
+logs, remain only on the ephemeral runner for the duration of the job, and are
+not uploaded as artifacts.
 
 ## Repository variables
 
@@ -45,10 +45,10 @@ Example `TF_VARS_JSON` shape:
   "cloudflare_zone_id": "cloudflare-zone-id",
   "cloudflare_proxied": false,
   "acm_certificate_arn": "arn:aws:acm:eu-central-1:111122223333:certificate/example",
-  "custom_ami_id": "ami-example",
-  "ecr_repository_name": "deployment-notes-app",
-  "initial_backend_image_tag": "backend-1.0.0",
-  "initial_frontend_image_tag": "frontend-1.0.0"
+  "custom_ami_id": "ami-0123456789abcdef0",
+  "ecr_repository_name": "deployments-notes-app",
+  "initial_backend_image_tag": "1.0.0",
+  "initial_frontend_image_tag": "1.0.0"
 }
 ```
 

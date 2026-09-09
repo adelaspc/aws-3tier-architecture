@@ -11,7 +11,7 @@ locals {
 resource "aws_db_instance" "main" {
   #checkov:skip=CKV_AWS_118: Enhanced monitoring cost is intentionally omitted for the short-lived demo
   #checkov:skip=CKV_AWS_129: Database log exports are intentionally omitted for the short-lived demo
-  #checkov:skip=CKV_AWS_161: The demo application uses password authentication from SSM, not IAM DB authentication
+  #checkov:skip=CKV_AWS_161: The demo application uses password authentication from the RDS-managed Secrets Manager secret, not IAM DB authentication
   #checkov:skip=CKV_AWS_226: Automatic minor upgrades are avoided during short-lived, manually scheduled demos
   #checkov:skip=CKV_AWS_293: Deletion protection is configurable and disabled to support terraform destroy
   #checkov:skip=CKV_AWS_353: Performance Insights is omitted for the short-lived demo; production should enable an observability profile intentionally

@@ -59,7 +59,20 @@ terraform output github_actions_repository_variables
 
 Copy the output values into GitHub repository variables. See [ci-cd.md](ci-cd.md) for the full variable and secret list.
 
-## 5. Deploy the Dev Environment
+## 5. Configure the Manual Runtime Parameters
+
+Before launching the EC2 instances, create the two CloudWatch agent configuration parameters documented in [operations.md](operations.md). Terraform creates the image-tag parameters and the non-secret database configuration parameter during the dev apply; do not create those manually.
+
+The default CloudWatch agent parameter names are:
+
+```text
+/dev/deployment-app/cloudwatch-agent/backend
+/dev/deployment-app/cloudwatch-agent/frontend
+```
+
+Create them before the next step so instance user data can complete successfully on first boot.
+
+## 6. Deploy the Dev Environment
 
 Apply the composed dev environment:
 
@@ -74,11 +87,9 @@ terraform output github_actions_app_variables
 
 Copy the app output values into GitHub repository or environment variables.
 
-## 6. Configure Runtime Parameters
+## 7. Verify Runtime Configuration
 
-Terraform manages the image tag parameters and the non-secret database config parameter. The RDS password stays in the AWS-managed RDS master user secret.
-
-Create only the manually documented CloudWatch agent SSM parameters before relying on instance bootstrap. Do not manually create the Terraform-managed database config parameter.
+Terraform manages the image tag parameters and the non-secret database config parameter. The RDS password stays in the AWS-managed RDS master user secret. Confirm that these resources and the manually created CloudWatch agent parameters are present before continuing.
 
 Useful outputs:
 
@@ -88,7 +99,7 @@ terraform -chdir=environments/dev output backend_image_tag_parameter_name
 terraform -chdir=environments/dev output frontend_image_tag_parameter_name
 ```
 
-## 7. Run the Application Deployment Workflow
+## 8. Run the Application Deployment Workflow
 
 Trigger the application workflow from GitHub Actions after infrastructure is ready. The workflow builds images, pushes to ECR, runs migrations through SSM, updates image tag parameters, and refreshes the app and web ASGs.
 
@@ -103,7 +114,7 @@ The deployed demo workload is documented in [deployment-notes/README.md](../depl
 
 ![Deployment Notes deployed app](assets/deployment-notes-app.png)
 
-## 8. Verify AWS Resources
+## 9. Verify AWS Resources
 
 Recommended checks:
 
@@ -120,7 +131,7 @@ aws logs describe-log-groups \
   --log-group-name-prefix "/dev/deployment-notes"
 ```
 
-## 9. Destroy the Demo
+## 10. Destroy the Demo
 
 Destroy the application environment when the review/demo is finished:
 
@@ -129,4 +140,4 @@ cd environments/dev
 terraform destroy
 ```
 
-Keep `backend-bootstrap` separate unless you intentionally want to remove the remote state bucket and lockfile table.
+Keep `backend-bootstrap` separate unless you intentionally want to retire the remote state bucket. State locking uses native S3 lockfiles; this project does not create a DynamoDB lock table.

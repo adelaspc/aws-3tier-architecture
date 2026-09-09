@@ -44,6 +44,24 @@ The database config parameter is managed by Terraform and contains only non-secr
 
 The RDS password remains in the AWS-managed RDS master user secret. The backend EC2 role can read that one secret at runtime and build the SQLAlchemy URL inside the container.
 
+Create the two CloudWatch agent configuration parameters before the first dev apply. The following minimal configurations collect the instance bootstrap logs that are written by user data; adjust the parameter and log-group prefixes when deploying a different environment:
+
+```bash
+aws ssm put-parameter \
+  --name "/dev/deployment-app/cloudwatch-agent/backend" \
+  --type String \
+  --value '{"agent":{"metrics_collection_interval":60,"run_as_user":"root"},"logs":{"logs_collected":{"files":{"collect_list":[{"file_path":"/var/log/deployment-notes-app-user-data.log","log_group_name":"/dev/deployment-notes/backend/bootstrap","log_stream_name":"{instance_id}"}]}}}}' \
+  --overwrite
+
+aws ssm put-parameter \
+  --name "/dev/deployment-app/cloudwatch-agent/frontend" \
+  --type String \
+  --value '{"agent":{"metrics_collection_interval":60,"run_as_user":"root"},"logs":{"logs_collected":{"files":{"collect_list":[{"file_path":"/var/log/deployment-notes-web-user-data.log","log_group_name":"/dev/deployment-notes/frontend/bootstrap","log_stream_name":"{instance_id}"}]}}}}' \
+  --overwrite
+```
+
+These parameters contain agent configuration, not credentials, so the Terraform runtime roles read them with `ssm:GetParameter` and no decryption flag is required.
+
 ## ECR Repository
 
 The ECR repository is a prerequisite and is not created by the Terraform stack. Create it before the application deployment workflow needs to push images, then set `ecr_repository_name` in Terraform and `ECR_REPOSITORY` in GitHub variables to the same repository name.

@@ -61,14 +61,14 @@ Trade-off:
 - Disabled by default: lower cost and simpler demo setup.
 - Enabled when needed: better observability and troubleshooting capability.
 
-## AWS-Managed KMS Keys
+## Encryption Model
 
-This demo uses AWS-managed encryption keys for RDS managed secrets and SSM Parameter Store values instead of customer-managed KMS keys. That keeps the IAM model and teardown process simpler for a short-lived portfolio environment.
+This demo relies on the AWS-managed key used by the RDS-managed Secrets Manager secret instead of creating a customer-managed KMS key. The Terraform-managed SSM parameters are plain `String` parameters because they contain only non-secret image tags and database metadata; the database password is never stored in SSM.
 
 Trade-off:
 
-- AWS-managed keys: less Terraform and IAM complexity, no custom key rotation policy to operate.
-- Customer-managed keys: stronger control and audit boundaries for production, but require explicit key policies, rotation decisions, and additional runtime `kms:Decrypt` permissions.
+- AWS-managed secret encryption: less Terraform and IAM complexity, no custom key policy to operate.
+- Customer-managed keys and `SecureString` parameters: stronger control and audit boundaries when sensitive SSM values are introduced, but require explicit key policies, rotation decisions, and additional runtime `kms:Decrypt` permissions.
 
 ## Runtime Secrets and Configuration Flow
 

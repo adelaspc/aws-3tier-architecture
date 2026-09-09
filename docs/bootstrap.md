@@ -56,6 +56,7 @@ More detail: [../environments/github-actions-bootstrap/README.md](../environment
 2. Bootstrap GitHub Actions IAM.
 3. Configure GitHub variables, secrets, and environments.
 4. Configure `environments/dev` backend and variables.
-5. Apply the dev infrastructure.
-6. Configure runtime SSM parameters if they were not already created.
-7. Run the application deployment workflow.
+5. Create the manually managed CloudWatch agent SSM parameters documented in [operations.md](operations.md).
+6. Apply the dev infrastructure; Terraform creates the image-tag and non-secret database configuration parameters as part of this apply.
+7. Configure GitHub application-deployment variables from the dev outputs.
+8. Run the application deployment workflow.
