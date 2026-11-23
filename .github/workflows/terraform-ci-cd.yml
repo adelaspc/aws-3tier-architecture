@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read Terraform version
         id: terraform-version
@@ -106,7 +106,7 @@ jobs:
         run: terraform test -no-color
 
       - name: Set up TFLint
-        uses: terraform-linters/setup-tflint@c750028ac0f3831886a261f96da68ab58a92e7ec # v6
+        uses: terraform-linters/setup-tflint@4fc96bcea1bec9bb55b3ba38941352552ffb6ed8 # v6
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
 
@@ -118,7 +118,7 @@ jobs:
         run: tflint --recursive --format compact --config "$GITHUB_WORKSPACE/.tflint.hcl"
 
       - name: Run Checkov
-        uses: bridgecrewio/checkov-action@5659ddea96102e16d8f221b3d8402453c0b1c150 # v12
+        uses: bridgecrewio/checkov-action@b17b606d6ec72bb8ba5721ad5b7e340b80a9fc39 # v12
         with:
           directory: environments
           framework: terraform
@@ -143,7 +143,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read Terraform version
         id: terraform-version
@@ -196,7 +196,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read Terraform version
         id: terraform-version
@@ -315,7 +315,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Read Terraform version
         id: terraform-version
